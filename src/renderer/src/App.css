@@ -618,6 +618,15 @@
   letter-spacing: 0.5px;
 }
 
+.pane-popup-hint {
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  flex: 1;
+  text-align: right;
+  padding-right: 8px;
+}
+
 .pane-popup-close {
   padding: 2px 8px;
   border-radius: 3px;

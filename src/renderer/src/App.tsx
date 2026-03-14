@@ -418,10 +418,49 @@ function App(): React.JSX.Element {
       </div>
 
       {paneContent !== null && (
-        <div className="pane-overlay" onClick={() => setPaneContent(null)}>
+        <div
+          className="pane-overlay"
+          tabIndex={-1}
+          ref={(el) => el?.focus()}
+          onClick={() => setPaneContent(null)}
+          onKeyDown={(e) => {
+            const el = paneViewerRef.current
+            if (!el) return
+            const line = 16
+            const half = el.clientHeight / 2
+            switch (e.key) {
+              case 'j':
+                el.scrollBy(0, line)
+                break
+              case 'k':
+                el.scrollBy(0, -line)
+                break
+              case 'd':
+                el.scrollBy(0, half)
+                break
+              case 'u':
+                el.scrollBy(0, -half)
+                break
+              case 'g':
+                el.scrollTo(0, 0)
+                break
+              case 'G':
+                el.scrollTo(0, el.scrollHeight)
+                break
+              case 'Escape':
+              case 'q':
+                setPaneContent(null)
+                break
+              default:
+                return
+            }
+            e.preventDefault()
+          }}
+        >
           <div className="pane-popup" onClick={(e) => e.stopPropagation()}>
             <div className="pane-popup-header">
               <span className="pane-popup-title">{selected}</span>
+              <span className="pane-popup-hint">j/k d/u g/G q</span>
               <button className="pane-popup-close" onClick={() => setPaneContent(null)}>
                 Esc
               </button>
