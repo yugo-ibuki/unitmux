@@ -48,7 +48,15 @@ function App(): React.JSX.Element {
   const [previewKey, setPreviewKey] = useState(() => {
     return localStorage.getItem('previewKey') ?? 'l'
   })
+  const [detailKey, setDetailKey] = useState(() => {
+    return localStorage.getItem('detailKey') ?? 'd'
+  })
+  const [gitKey, setGitKey] = useState(() => {
+    return localStorage.getItem('gitKey') ?? 'g'
+  })
   const [editingPreviewKey, setEditingPreviewKey] = useState(false)
+  const [editingDetailKey, setEditingDetailKey] = useState(false)
+  const [editingGitKey, setEditingGitKey] = useState(false)
   const [paneContent, setPaneContent] = useState<string | null>(null)
   const [paneDetail, setPaneDetail] = useState<PaneDetail | null>(null)
   const [commitMsg, setCommitMsg] = useState('')
@@ -77,6 +85,14 @@ function App(): React.JSX.Element {
   useEffect(() => {
     localStorage.setItem('previewKey', previewKey)
   }, [previewKey])
+
+  useEffect(() => {
+    localStorage.setItem('detailKey', detailKey)
+  }, [detailKey])
+
+  useEffect(() => {
+    localStorage.setItem('gitKey', gitKey)
+  }, [gitKey])
 
   useEffect(() => {
     const poll = async (): Promise<void> => {
@@ -160,8 +176,8 @@ function App(): React.JSX.Element {
         }
       }
 
-      // Ctrl+D → show session detail popup
-      if (e.ctrlKey && e.key === 'd' && !e.metaKey) {
+      // Ctrl+[detailKey] → show session detail popup
+      if (e.ctrlKey && e.key === detailKey && !e.metaKey) {
         e.preventDefault()
         if (selected) {
           window.api.getPaneDetail(selected).then((detail) => {
@@ -170,8 +186,8 @@ function App(): React.JSX.Element {
         }
       }
 
-      // Ctrl+G → show git operations popup
-      if (e.ctrlKey && e.key === 'g' && !e.metaKey) {
+      // Ctrl+[gitKey] → show git operations popup
+      if (e.ctrlKey && e.key === gitKey && !e.metaKey) {
         e.preventDefault()
         if (selected) {
           window.api.getPaneDetail(selected).then((detail) => {
@@ -201,7 +217,7 @@ function App(): React.JSX.Element {
     }
     window.addEventListener('keydown', handleGlobalKeyDown)
     return () => window.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [selected, panes, choiceModifier, previewKey, paneContent, paneDetail, gitPopup])
+  }, [selected, panes, choiceModifier, previewKey, detailKey, gitKey, paneContent, paneDetail, gitPopup])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -465,6 +481,58 @@ function App(): React.JSX.Element {
             ) : (
               <button className="key-display" onClick={() => setEditingPreviewKey(true)}>
                 Ctrl+{previewKey.toUpperCase()}
+              </button>
+            )}
+          </label>
+          <label className="setting-row">
+            <span className="setting-label">Detail Key</span>
+            {editingDetailKey ? (
+              <span
+                className="key-capture"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  e.preventDefault()
+                  if (e.key.length === 1 && !e.metaKey && !e.ctrlKey) {
+                    setDetailKey(e.key.toLowerCase())
+                    setEditingDetailKey(false)
+                  }
+                  if (e.key === 'Escape') {
+                    setEditingDetailKey(false)
+                  }
+                }}
+                ref={(el) => el?.focus()}
+              >
+                Press a key...
+              </span>
+            ) : (
+              <button className="key-display" onClick={() => setEditingDetailKey(true)}>
+                Ctrl+{detailKey.toUpperCase()}
+              </button>
+            )}
+          </label>
+          <label className="setting-row">
+            <span className="setting-label">Git Key</span>
+            {editingGitKey ? (
+              <span
+                className="key-capture"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  e.preventDefault()
+                  if (e.key.length === 1 && !e.metaKey && !e.ctrlKey) {
+                    setGitKey(e.key.toLowerCase())
+                    setEditingGitKey(false)
+                  }
+                  if (e.key === 'Escape') {
+                    setEditingGitKey(false)
+                  }
+                }}
+                ref={(el) => el?.focus()}
+              >
+                Press a key...
+              </span>
+            ) : (
+              <button className="key-display" onClick={() => setEditingGitKey(true)}>
+                Ctrl+{gitKey.toUpperCase()}
               </button>
             )}
           </label>
