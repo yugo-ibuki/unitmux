@@ -1,0 +1,65 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+huge-mouse is a floating Electron desktop app that sends input to tmux sessions. It provides a lightweight UI for selecting and sending commands to active tmux panes.
+
+- Electron 39 + React 19 + TypeScript 5.9
+- Build tooling: electron-vite + electron-builder
+- Current status: scaffold phase (v0.1.0) with functional tmux integration
+
+## Commands
+
+```bash
+npm run dev              # Start development mode
+npm run build            # Full build (typecheck + compile)
+npm run build:mac        # Build for macOS
+npm run build:win        # Build for Windows
+npm run build:linux      # Build for Linux
+npm run build:unpack     # Build unpacked (for testing)
+npm run lint             # ESLint
+npm run format           # Prettier formatting
+npm run typecheck        # TypeScript check (both node + web)
+npm run typecheck:node   # TypeScript check for main/preload only
+npm run typecheck:web    # TypeScript check for renderer only
+```
+
+## Architecture
+
+Three-process Electron architecture with context isolation:
+
+```
+src/main/          → Electron main process (Node.js)
+  index.ts         → Window creation (400×300, always-on-top), IPC handler registration
+  tmux.ts          → tmux interaction: listPanes(), sendInput() with target validation
+
+src/preload/       → Context bridge (secure IPC between main ↔ renderer)
+  index.ts         → Exposes electron API and custom API via contextBridge
+  index.d.ts       → Type definitions for ElectronAPI interface
+
+src/renderer/src/  → React UI (browser environment)
+  main.tsx         → React bootstrap
+  App.tsx          → Root component
+  components/      → UI components
+  assets/          → CSS, SVG
+```
+
+### IPC Channels
+
+- `tmux:list-sessions` → Returns `TmuxPane[]` (target, pid, command, title)
+- `tmux:send-input` → Sends text to a tmux pane by target (e.g., `session:0.0`)
+
+### TypeScript Configuration
+
+Three separate tsconfigs via composite project references:
+- `tsconfig.node.json` — main + preload (Node environment)
+- `tsconfig.web.json` — renderer (DOM + React, `@renderer` path alias → `src/renderer/src`)
+- `tsconfig.json` — root that references both
+
+## Code Style
+
+- Prettier: single quotes, no semicolons, 100-char width, no trailing commas
+- EditorConfig: 2-space indent, LF line endings, UTF-8
+- ESLint: TypeScript + React + React Hooks + React Refresh rules
