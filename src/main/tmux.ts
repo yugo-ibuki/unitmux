@@ -213,11 +213,20 @@ export async function sendInput(
     return { success: false, error: 'Invalid target format' }
   }
 
-  const sanitized = text.replace(/\n/g, ' ')
-
   try {
-    await run(['send-keys', '-t', target, '-l', sanitized])
-    await run(['send-keys', '-t', target, 'Enter'])
+    const hasNewlines = text.includes('\n')
+    if (hasNewlines) {
+      // Send bracketed paste escape sequences to preserve newlines
+      const trimmed = text.replace(/\n+$/, '')
+      await run(['send-keys', '-t', target, '\x1b[200~'])
+      await run(['send-keys', '-t', target, '-l', trimmed])
+      await run(['send-keys', '-t', target, '\x1b[201~'])
+      await new Promise((r) => setTimeout(r, 300))
+      await run(['send-keys', '-t', target, '', 'Enter'])
+    } else {
+      await run(['send-keys', '-t', target, '-l', text])
+      await run(['send-keys', '-t', target, 'Enter'])
+    }
     return { success: true }
   } catch (e) {
     return { success: false, error: String(e) }
