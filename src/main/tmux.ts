@@ -49,7 +49,7 @@ function run(args: string[]): Promise<string> {
   const fullArgs = socketPath ? ['-S', socketPath, ...args] : args
 
   return new Promise((resolve, reject) => {
-    execFile(tmuxBin, fullArgs, { timeout: 5000 }, (error, stdout, stderr) => {
+    execFile(tmuxBin, fullArgs, { timeout: 5000, env: { ...process.env, LANG: 'en_US.UTF-8' } }, (error, stdout, stderr) => {
       if (error) {
         console.error('[tmux]', error.message, stderr)
         return reject(error)
