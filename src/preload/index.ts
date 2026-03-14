@@ -36,6 +36,10 @@ const api = {
     ipcRenderer.invoke('tmux:capture-pane', target),
   getPaneDetail: (target: string): Promise<PaneDetail | null> =>
     ipcRenderer.invoke('tmux:pane-detail', target),
+  gitAdd: (cwd: string): Promise<SendResult> => ipcRenderer.invoke('git:add', cwd),
+  gitCommit: (cwd: string, message: string): Promise<SendResult> =>
+    ipcRenderer.invoke('git:commit', { cwd, message }),
+  gitPush: (cwd: string): Promise<SendResult> => ipcRenderer.invoke('git:push', cwd),
   setAlwaysOnTop: (value: boolean): Promise<boolean> =>
     ipcRenderer.invoke('window:set-always-on-top', value),
   getAlwaysOnTop: (): Promise<boolean> => ipcRenderer.invoke('window:get-always-on-top')

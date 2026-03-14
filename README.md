@@ -46,7 +46,21 @@ When `claude` or `codex` presents numbered choices (e.g. "1. Yes / 2. No"), clic
 | `Cmd+↑` | Switch to previous pane |
 | `Cmd+↓` | Switch to next pane |
 | `Ctrl+1-9` | Send numbered choice directly (modifier key configurable) |
+| `Ctrl+L` | Open pane content preview (key configurable) |
+| `Ctrl+D` | Open session detail popup |
+| `Ctrl+G` | Open git operations popup |
 | `↑` / `↓` | Navigate input history |
+| `Escape` | Close popup / refocus textarea |
+
+Popups support vim-style navigation: `j`/`k` (scroll), `d`/`u` (half-page), `g`/`G` (top/bottom), `q` (close).
+
+### Session detail
+
+Press `Ctrl+D` to view details of the selected pane: target, command, model, session ID, PID, CWD, and git branch/status.
+
+### Git operations
+
+Press `Ctrl+G` to open git operations for the selected pane's working directory. You can **Add All**, **Commit** (with a message), and **Push** directly from the popup.
 
 ### Settings
 
@@ -55,6 +69,7 @@ Click the gear icon to access settings:
 - **Always on Top** — keep the window above other windows
 - **Theme** — switch between Dark and Light
 - **Choice Key** — change the modifier for quick choice shortcuts (`Ctrl` or `Cmd`)
+- **Preview Key** — change the key for pane content preview (`Ctrl+<key>`)
 
 ## License
 

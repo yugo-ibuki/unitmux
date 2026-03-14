@@ -51,6 +51,9 @@ function App(): React.JSX.Element {
   const [editingPreviewKey, setEditingPreviewKey] = useState(false)
   const [paneContent, setPaneContent] = useState<string | null>(null)
   const [paneDetail, setPaneDetail] = useState<PaneDetail | null>(null)
+  const [commitMsg, setCommitMsg] = useState('')
+  const [gitResult, setGitResult] = useState<{ message: string; ok: boolean } | null>(null)
+  const [gitPopup, setGitPopup] = useState<PaneDetail | null>(null)
   const detailContentRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const paneViewerRef = useRef<HTMLPreElement>(null)
@@ -167,6 +170,18 @@ function App(): React.JSX.Element {
         }
       }
 
+      // Ctrl+G → show git operations popup
+      if (e.ctrlKey && e.key === 'g' && !e.metaKey) {
+        e.preventDefault()
+        if (selected) {
+          window.api.getPaneDetail(selected).then((detail) => {
+            if (detail?.gitBranch) {
+              setGitPopup(detail)
+            }
+          })
+        }
+      }
+
       // Escape → close popups and refocus textarea
       if (e.key === 'Escape') {
         if (paneContent !== null) {
@@ -177,12 +192,16 @@ function App(): React.JSX.Element {
           e.preventDefault()
           setPaneDetail(null)
           requestAnimationFrame(() => textareaRef.current?.focus())
+        } else if (gitPopup !== null) {
+          e.preventDefault()
+          setGitPopup(null)
+          requestAnimationFrame(() => textareaRef.current?.focus())
         }
       }
     }
     window.addEventListener('keydown', handleGlobalKeyDown)
     return () => window.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [selected, panes, choiceModifier, previewKey, paneContent, paneDetail])
+  }, [selected, panes, choiceModifier, previewKey, paneContent, paneDetail, gitPopup])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -512,9 +531,15 @@ function App(): React.JSX.Element {
         <div
           className="pane-overlay"
           tabIndex={-1}
-          ref={(el) => el?.focus()}
+          ref={(el) => {
+            if (el && !el.dataset.focused) {
+              el.focus()
+              el.dataset.focused = 'true'
+            }
+          }}
           onClick={() => { setPaneDetail(null); requestAnimationFrame(() => textareaRef.current?.focus()) }}
           onKeyDown={(e) => {
+            if ((e.target as HTMLElement).tagName === 'INPUT') return
             const el = detailContentRef.current
             if (!el) return
             const line = 16
@@ -591,6 +616,105 @@ function App(): React.JSX.Element {
                   <span className="detail-label">Git Status</span>
                   <pre className="detail-value detail-git-status">{paneDetail.gitStatus}</pre>
                 </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {gitPopup !== null && (
+        <div
+          className="pane-overlay"
+          tabIndex={-1}
+          ref={(el) => {
+            if (el && !el.dataset.focused) {
+              el.focus()
+              el.dataset.focused = 'true'
+            }
+          }}
+          onClick={() => { setGitPopup(null); requestAnimationFrame(() => textareaRef.current?.focus()) }}
+          onKeyDown={(e) => {
+            if ((e.target as HTMLElement).tagName === 'INPUT') return
+            if (e.key === 'Escape' || e.key === 'q') {
+              setGitPopup(null)
+              requestAnimationFrame(() => textareaRef.current?.focus())
+              e.preventDefault()
+            }
+          }}
+        >
+          <div className="pane-popup detail-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="pane-popup-header">
+              <span className="pane-popup-title">Git — {gitPopup.gitBranch}</span>
+              <button className="pane-popup-close" onClick={() => { setGitPopup(null); requestAnimationFrame(() => textareaRef.current?.focus()) }}>
+                Esc
+              </button>
+            </div>
+            {gitPopup.gitStatus && (
+              <pre className="detail-value detail-git-status" style={{ margin: '8px 12px' }}>{gitPopup.gitStatus}</pre>
+            )}
+            <div className="git-actions">
+              <div className="git-actions-row">
+                <button
+                  className="git-btn"
+                  onClick={async () => {
+                    const r = await window.api.gitAdd(gitPopup.cwd)
+                    setGitResult(r.success ? { message: 'Staged all', ok: true } : { message: r.error ?? 'Failed', ok: false })
+                    const refreshed = await window.api.getPaneDetail(gitPopup.target)
+                    if (refreshed) setGitPopup(refreshed)
+                    setTimeout(() => setGitResult(null), 2000)
+                  }}
+                >
+                  Add All
+                </button>
+                <button
+                  className="git-btn git-btn-push"
+                  onClick={async () => {
+                    const r = await window.api.gitPush(gitPopup.cwd)
+                    setGitResult(r.success ? { message: 'Pushed', ok: true } : { message: r.error ?? 'Failed', ok: false })
+                    setTimeout(() => setGitResult(null), 2000)
+                  }}
+                >
+                  Push
+                </button>
+              </div>
+              <div className="git-commit-row">
+                <input
+                  className="git-commit-input"
+                  placeholder="Commit message..."
+                  value={commitMsg}
+                  onChange={(e) => setCommitMsg(e.target.value)}
+                  onKeyDown={(e) => {
+                    e.stopPropagation()
+                    if (e.key === 'Enter' && commitMsg.trim()) {
+                      window.api.gitCommit(gitPopup.cwd, commitMsg.trim()).then(async (r) => {
+                        setGitResult(r.success ? { message: 'Committed', ok: true } : { message: r.error ?? 'Failed', ok: false })
+                        if (r.success) setCommitMsg('')
+                        const refreshed = await window.api.getPaneDetail(gitPopup.target)
+                        if (refreshed) setGitPopup(refreshed)
+                        setTimeout(() => setGitResult(null), 2000)
+                      })
+                    }
+                  }}
+                />
+                <button
+                  className="git-btn"
+                  disabled={!commitMsg.trim()}
+                  onClick={async () => {
+                    const r = await window.api.gitCommit(gitPopup.cwd, commitMsg.trim())
+                    setGitResult(r.success ? { message: 'Committed', ok: true } : { message: r.error ?? 'Failed', ok: false })
+                    if (r.success) setCommitMsg('')
+                    const refreshed = await window.api.getPaneDetail(gitPopup.target)
+                    if (refreshed) setGitPopup(refreshed)
+                    setTimeout(() => setGitResult(null), 2000)
+                  }}
+                >
+                  Commit
+                </button>
+              </div>
+              {gitResult && (
+                <span className={gitResult.ok ? 'git-result-ok' : 'git-result-err'}>
+                  {gitResult.message}
+                </span>
               )}
             </div>
           </div>

@@ -19,15 +19,17 @@ export interface TmuxPane {
 }
 
 const TMUX_PATHS = ['/opt/homebrew/bin/tmux', '/usr/local/bin/tmux', '/usr/bin/tmux']
+const GIT_PATHS = ['/opt/homebrew/bin/git', '/usr/local/bin/git', '/usr/bin/git']
 
-function findTmux(): string {
-  for (const p of TMUX_PATHS) {
+function findBin(candidates: string[], fallback: string): string {
+  for (const p of candidates) {
     if (existsSync(p)) return p
   }
-  return 'tmux'
+  return fallback
 }
 
-const tmuxBin = findTmux()
+const tmuxBin = findBin(TMUX_PATHS, 'tmux')
+const gitBin = findBin(GIT_PATHS, 'git')
 
 function getTmuxSocketPath(): string | undefined {
   // When launched from Finder, TMUX env var is not inherited.
@@ -59,7 +61,7 @@ function run(args: string[]): Promise<string> {
 
 function runGit(args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
-    execFile('git', args, { timeout: 3000 }, (error, stdout) => {
+    execFile(gitBin, args, { timeout: 3000 }, (error, stdout) => {
       if (error) return reject(error)
       resolve(stdout)
     })
@@ -282,6 +284,36 @@ export async function getPaneDetail(target: string): Promise<PaneDetail | null> 
     }
   } catch {
     return null
+  }
+}
+
+export async function gitAdd(cwd: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await runGit(['-C', cwd, 'add', '-A'])
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: String(e) }
+  }
+}
+
+export async function gitCommit(
+  cwd: string,
+  message: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await runGit(['-C', cwd, 'commit', '-m', message])
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: String(e) }
+  }
+}
+
+export async function gitPush(cwd: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await runGit(['-C', cwd, 'push'])
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: String(e) }
   }
 }
 

@@ -41,6 +41,9 @@ interface TmuxAPI {
   sendInput: (target: string, text: string) => Promise<SendResult>
   capturePane: (target: string) => Promise<string>
   getPaneDetail: (target: string) => Promise<PaneDetail | null>
+  gitAdd: (cwd: string) => Promise<SendResult>
+  gitCommit: (cwd: string, message: string) => Promise<SendResult>
+  gitPush: (cwd: string) => Promise<SendResult>
   setAlwaysOnTop: (value: boolean) => Promise<boolean>
   getAlwaysOnTop: () => Promise<boolean>
 }
