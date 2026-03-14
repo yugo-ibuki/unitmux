@@ -23,11 +23,19 @@ function App(): React.JSX.Element {
   const [status, setStatus] = useState<{ message: string; ok: boolean } | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [alwaysOnTop, setAlwaysOnTop] = useState(true)
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('theme') as 'dark' | 'light') ?? 'dark'
+  })
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     window.api.getAlwaysOnTop().then(setAlwaysOnTop)
   }, [])
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('theme', theme)
+  }, [theme])
 
   useEffect(() => {
     const poll = async (): Promise<void> => {
@@ -160,7 +168,10 @@ function App(): React.JSX.Element {
                       className="prompt-choice-btn"
                       onClick={async () => {
                         await window.api.sendInput(selectedPane.target, c.number)
-                        setStatus({ message: `Sent ${c.number} → ${selectedPane.target}`, ok: true })
+                        setStatus({
+                          message: `Sent ${c.number} → ${selectedPane.target}`,
+                          ok: true
+                        })
                         setTimeout(() => setStatus(null), 2000)
                       }}
                     >
@@ -193,16 +204,36 @@ function App(): React.JSX.Element {
         </div>
 
         <div className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
-            <div className="sidebar-title">Settings</div>
-            <label className="setting-row">
-              <span className="setting-label">Always on Top</span>
+          <div className="sidebar-title">Settings</div>
+          <label className="setting-row">
+            <span className="setting-label">Always on Top</span>
+            <button
+              className={`toggle ${alwaysOnTop ? 'toggle-on' : ''}`}
+              onClick={toggleAlwaysOnTop}
+            >
+              <span className="toggle-knob" />
+            </button>
+          </label>
+          <div
+            className="setting-row"
+            style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}
+          >
+            <span className="setting-label">Theme</span>
+            <div className="theme-segment">
               <button
-                className={`toggle ${alwaysOnTop ? 'toggle-on' : ''}`}
-                onClick={toggleAlwaysOnTop}
+                className={`theme-btn ${theme === 'dark' ? 'theme-btn-active' : ''}`}
+                onClick={() => setTheme('dark')}
               >
-                <span className="toggle-knob" />
+                Dark
               </button>
-            </label>
+              <button
+                className={`theme-btn ${theme === 'light' ? 'theme-btn-active' : ''}`}
+                onClick={() => setTheme('light')}
+              >
+                Light
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
