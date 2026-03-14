@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-huge-mouse is a floating Electron desktop app that sends input to tmux sessions. It provides a lightweight UI for selecting and sending commands to active tmux panes.
+huge-mouse is a floating Electron desktop app that sends input to tmux sessions running `claude` or `codex` commands. It provides a lightweight UI for selecting and sending commands to active tmux panes.
 
 - Electron 39 + React 19 + TypeScript 5.9
 - Build tooling: electron-vite + electron-builder
@@ -36,20 +36,30 @@ src/main/          → Electron main process (Node.js)
   tmux.ts          → tmux interaction: listPanes(), sendInput() with target validation
 
 src/preload/       → Context bridge (secure IPC between main ↔ renderer)
-  index.ts         → Exposes electron API and custom API via contextBridge
-  index.d.ts       → Type definitions for ElectronAPI interface
+  index.ts         → Exposes window.api (TmuxAPI) via contextBridge
+  index.d.ts       → Type definitions for Window.api (TmuxAPI) and Window.electron (ElectronAPI)
 
 src/renderer/src/  → React UI (browser environment)
   main.tsx         → React bootstrap
-  App.tsx          → Root component
-  components/      → UI components
+  App.tsx          → Root component (pane selector, text input, send button)
   assets/          → CSS, SVG
 ```
 
 ### IPC Channels
 
-- `tmux:list-sessions` → Returns `TmuxPane[]` (target, pid, command, title)
-- `tmux:send-input` → Sends text to a tmux pane by target (e.g., `session:0.0`)
+- `tmux:list-sessions` → Returns `TmuxPane[]` filtered to panes running `claude` or `codex` only
+- `tmux:send-input` → Sends text to a tmux pane by target (e.g., `session:0.0`), returns `SendResult`
+
+### Key Types
+
+- `TmuxPane { target, pid, command, title }` — defined in main/tmux.ts, preload/index.ts, renderer App.tsx
+- `SendResult { success, error? }` — defined in preload/index.ts
+
+### UI Behavior
+
+- Pane list auto-refreshes every 5 seconds via polling
+- Cmd+Enter sends input from the textarea
+- First available pane is auto-selected on initial load
 
 ### TypeScript Configuration
 
