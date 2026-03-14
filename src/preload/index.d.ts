@@ -46,6 +46,8 @@ interface TmuxAPI {
   gitPush: (cwd: string) => Promise<SendResult>
   setAlwaysOnTop: (value: boolean) => Promise<boolean>
   getAlwaysOnTop: () => Promise<boolean>
+  setOpacity: (value: number) => Promise<number>
+  getOpacity: () => Promise<number>
 }
 
 declare global {

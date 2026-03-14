@@ -39,6 +39,9 @@ function App(): React.JSX.Element {
   const [status, setStatus] = useState<{ message: string; ok: boolean } | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [alwaysOnTop, setAlwaysOnTop] = useState(true)
+  const [opacity, setOpacity] = useState(() => {
+    return Number(localStorage.getItem('opacity') ?? '1')
+  })
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     return (localStorage.getItem('theme') as 'dark' | 'light') ?? 'dark'
   })
@@ -71,6 +74,7 @@ function App(): React.JSX.Element {
 
   useEffect(() => {
     window.api.getAlwaysOnTop().then(setAlwaysOnTop)
+    window.api.setOpacity(opacity)
   }, [])
 
   useEffect(() => {
@@ -417,6 +421,23 @@ function App(): React.JSX.Element {
             >
               <span className="toggle-knob" />
             </button>
+          </label>
+          <label className="setting-row">
+            <span className="setting-label">Opacity</span>
+            <input
+              type="range"
+              className="opacity-slider"
+              min="0.5"
+              max="1"
+              step="0.05"
+              value={opacity}
+              onChange={(e) => {
+                const v = Number(e.target.value)
+                setOpacity(v)
+                localStorage.setItem('opacity', String(v))
+                window.api.setOpacity(v)
+              }}
+            />
           </label>
           <div
             className="setting-row"

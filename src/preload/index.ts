@@ -42,7 +42,10 @@ const api = {
   gitPush: (cwd: string): Promise<SendResult> => ipcRenderer.invoke('git:push', cwd),
   setAlwaysOnTop: (value: boolean): Promise<boolean> =>
     ipcRenderer.invoke('window:set-always-on-top', value),
-  getAlwaysOnTop: (): Promise<boolean> => ipcRenderer.invoke('window:get-always-on-top')
+  getAlwaysOnTop: (): Promise<boolean> => ipcRenderer.invoke('window:get-always-on-top'),
+  setOpacity: (value: number): Promise<number> =>
+    ipcRenderer.invoke('window:set-opacity', value),
+  getOpacity: (): Promise<number> => ipcRenderer.invoke('window:get-opacity')
 }
 
 if (process.contextIsolated) {

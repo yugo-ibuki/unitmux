@@ -81,6 +81,7 @@ Press `Ctrl+G` to open git operations for the selected pane's working directory.
 Click the gear icon to access settings:
 
 - **Always on Top** — keep the window above other windows
+- **Opacity** — adjust window transparency (50%–100%)
 - **Theme** — switch between Dark and Light
 - **Choice Key** — change the modifier for quick choice shortcuts (`Ctrl` or `Cmd`)
 - **Preview Key** — change the key for pane content preview (`Ctrl+<key>`)

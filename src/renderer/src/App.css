@@ -521,6 +521,35 @@
   left: 16px;
 }
 
+/* ── Opacity slider ── */
+.opacity-slider {
+  width: 80px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.opacity-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  box-shadow: 0 0 6px var(--accent-glow);
+  cursor: pointer;
+  transition: box-shadow var(--transition-fast);
+}
+
+.opacity-slider::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 10px var(--accent-glow), 0 0 16px rgba(91, 141, 239, 0.1);
+}
+
 /* ── Scrollbar ── */
 ::-webkit-scrollbar {
   width: 3px;

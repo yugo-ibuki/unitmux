@@ -67,6 +67,17 @@ app.whenReady().then(() => {
     return win?.isAlwaysOnTop() ?? true
   })
 
+  ipcMain.handle('window:set-opacity', (_event, value: number) => {
+    const win = BrowserWindow.getFocusedWindow()
+    if (win) win.setOpacity(value)
+    return value
+  })
+
+  ipcMain.handle('window:get-opacity', () => {
+    const win = BrowserWindow.getFocusedWindow()
+    return win?.getOpacity() ?? 1
+  })
+
   createWindow()
 
   app.on('activate', () => {
