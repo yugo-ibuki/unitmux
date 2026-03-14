@@ -416,6 +416,7 @@
   border-left: 1px solid var(--border-subtle);
   flex-shrink: 0;
   overflow: hidden;
+  overflow-y: auto;
   transition: width 0.25s ease, padding 0.25s ease;
 }
 

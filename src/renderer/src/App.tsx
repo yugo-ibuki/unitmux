@@ -26,6 +26,9 @@ function App(): React.JSX.Element {
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     return (localStorage.getItem('theme') as 'dark' | 'light') ?? 'dark'
   })
+  const [choiceModifier, setChoiceModifier] = useState<'ctrl' | 'cmd'>(() => {
+    return (localStorage.getItem('choiceModifier') as 'ctrl' | 'cmd') ?? 'ctrl'
+  })
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [history, setHistory] = useState<string[]>([])
   const historyIndex = useRef(-1)
@@ -39,6 +42,10 @@ function App(): React.JSX.Element {
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    localStorage.setItem('choiceModifier', choiceModifier)
+  }, [choiceModifier])
 
   useEffect(() => {
     const poll = async (): Promise<void> => {
@@ -89,8 +96,9 @@ function App(): React.JSX.Element {
         })
       }
 
-      // Ctrl+Number → send choice directly to selected pane
-      if (e.ctrlKey && /^[1-9]$/.test(e.key)) {
+      // Modifier+Number → send choice directly to selected pane
+      const modPressed = choiceModifier === 'cmd' ? e.metaKey : e.ctrlKey
+      if (modPressed && /^[1-9]$/.test(e.key)) {
         const pane = panes.find((p) => p.target === selected)
         if (pane && pane.choices.length > 0) {
           const choice = pane.choices.find((c) => c.number === e.key)
@@ -110,7 +118,7 @@ function App(): React.JSX.Element {
     }
     window.addEventListener('keydown', handleGlobalKeyDown)
     return () => window.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [selected, panes])
+  }, [selected, panes, choiceModifier])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -328,6 +336,26 @@ function App(): React.JSX.Element {
                 onClick={() => setTheme('light')}
               >
                 Light
+              </button>
+            </div>
+          </div>
+          <div
+            className="setting-row"
+            style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}
+          >
+            <span className="setting-label">Choice Key</span>
+            <div className="theme-segment">
+              <button
+                className={`theme-btn ${choiceModifier === 'ctrl' ? 'theme-btn-active' : ''}`}
+                onClick={() => setChoiceModifier('ctrl')}
+              >
+                Ctrl
+              </button>
+              <button
+                className={`theme-btn ${choiceModifier === 'cmd' ? 'theme-btn-active' : ''}`}
+                onClick={() => setChoiceModifier('cmd')}
+              >
+                Cmd
               </button>
             </div>
           </div>
