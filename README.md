@@ -6,90 +6,49 @@ A floating desktop app that sends input to tmux sessions running `claude` or `co
 
 ## What it does
 
-huge-mouse is a small always-on-top Electron window that discovers tmux panes running AI coding assistants (`claude`, `codex`) and lets you send text input to them. It's useful when you want a lightweight, persistent UI for interacting with CLI-based AI tools without switching terminal windows.
+huge-mouse sits on top of your other windows and lets you type commands to AI coding assistants (`claude`, `codex`) running in tmux — without switching to your terminal.
 
-## Features
+It auto-discovers active AI panes, shows their status, and even lets you click numbered choices when the AI asks a question.
 
-- Auto-discovers tmux panes running `claude` or `codex`
-- Pane status detection: idle, busy, or waiting for input
-- One-click choice selection when the AI assistant presents numbered options
-- Always-on-top floating window (toggleable)
-- Keyboard shortcuts: `Cmd+Enter` to send, `Cmd+↑/↓` to switch panes
+## Requirements
 
-## Prerequisites
+- macOS or Linux
+- [tmux](https://github.com/tmux/tmux) with at least one session running `claude` or `codex`
 
-- **macOS / Linux** (tmux required)
-- **Node.js** >= 18
-- **tmux** installed and running with at least one session
-- A `claude` or `codex` process running inside a tmux pane
+## Install
 
-## Installation
+Download the latest release from the [Releases](https://github.com/yugo-ibuki/huge-mouse/releases) page and open the app.
 
-```bash
-git clone https://github.com/yugo-ibuki/huge-mouse.git
-cd huge-mouse
-npm install
-```
+## How to use
 
-## Usage
+1. Start `claude` or `codex` inside a tmux pane
+2. Open huge-mouse — it automatically finds your AI panes
+3. Select a pane from the tags at the top
+4. Type your message and press `Cmd+Enter` to send
 
-### Development
+### Status indicators
 
-```bash
-npm run dev
-```
+| Indicator | Meaning |
+|-----------|---------|
+| Green dot | Ready for input |
+| Yellow dot | Waiting for your response — choice buttons appear |
+| Gray dot | Busy, processing |
 
-### Build
+### When the AI asks a question
 
-```bash
-# macOS
-npm run build:mac
-
-# Windows
-npm run build:win
-
-# Linux
-npm run build:linux
-```
-
-### How to use
-
-1. Start a tmux session and run `claude` or `codex` in a pane
-2. Launch huge-mouse (`npm run dev` or the built app)
-3. The app automatically finds active AI panes and shows them as selectable tags
-4. Type your input in the textarea and press `Cmd+Enter` to send
-5. When the AI presents numbered choices (e.g. Yes/No prompts), click the choice buttons to respond directly
-
-### Pane status indicators
-
-- **Green dot** — idle, ready for input
-- **Yellow dot** — waiting for a response (choice buttons appear)
-- **Gray dot** — busy, processing
+When `claude` or `codex` presents numbered choices (e.g. "1. Yes / 2. No"), clickable buttons appear next to the pane tag. Click one to respond instantly.
 
 ### Keyboard shortcuts
 
 | Shortcut | Action |
 |----------|--------|
-| `Cmd+Enter` | Send input to selected pane |
-| `Cmd+↑` | Select previous pane |
-| `Cmd+↓` | Select next pane |
+| `Cmd+Enter` | Send input |
+| `Cmd+↑` | Switch to previous pane |
+| `Cmd+↓` | Switch to next pane |
 
-## Development Commands
+### Settings
 
-```bash
-npm run dev              # Start development mode
-npm run build            # Full build (typecheck + compile)
-npm run lint             # ESLint
-npm run format           # Prettier formatting
-npm run typecheck        # TypeScript check
-```
-
-## Tech Stack
-
-- Electron 39
-- React 19
-- TypeScript 5.9
-- electron-vite + electron-builder
+Click the gear icon to toggle **Always on Top** mode.
 
 ## License
 
