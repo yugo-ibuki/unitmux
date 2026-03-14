@@ -16,6 +16,8 @@ const api = {
   listSessions: (): Promise<TmuxPane[]> => ipcRenderer.invoke('tmux:list-sessions'),
   sendInput: (target: string, text: string): Promise<SendResult> =>
     ipcRenderer.invoke('tmux:send-input', { target, text }),
+  capturePane: (target: string): Promise<string> =>
+    ipcRenderer.invoke('tmux:capture-pane', target),
   setAlwaysOnTop: (value: boolean): Promise<boolean> =>
     ipcRenderer.invoke('window:set-always-on-top', value),
   getAlwaysOnTop: (): Promise<boolean> => ipcRenderer.invoke('window:get-always-on-top')

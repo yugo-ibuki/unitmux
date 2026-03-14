@@ -23,6 +23,7 @@ interface SendResult {
 interface TmuxAPI {
   listSessions: () => Promise<TmuxPane[]>
   sendInput: (target: string, text: string) => Promise<SendResult>
+  capturePane: (target: string) => Promise<string>
   setAlwaysOnTop: (value: boolean) => Promise<boolean>
   getAlwaysOnTop: () => Promise<boolean>
 }

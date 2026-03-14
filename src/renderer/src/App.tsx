@@ -29,7 +29,13 @@ function App(): React.JSX.Element {
   const [choiceModifier, setChoiceModifier] = useState<'ctrl' | 'cmd'>(() => {
     return (localStorage.getItem('choiceModifier') as 'ctrl' | 'cmd') ?? 'ctrl'
   })
+  const [previewKey, setPreviewKey] = useState(() => {
+    return localStorage.getItem('previewKey') ?? 'l'
+  })
+  const [editingPreviewKey, setEditingPreviewKey] = useState(false)
+  const [paneContent, setPaneContent] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const paneViewerRef = useRef<HTMLPreElement>(null)
   const [history, setHistory] = useState<string[]>([])
   const historyIndex = useRef(-1)
   const savedDraft = useRef('')
@@ -46,6 +52,10 @@ function App(): React.JSX.Element {
   useEffect(() => {
     localStorage.setItem('choiceModifier', choiceModifier)
   }, [choiceModifier])
+
+  useEffect(() => {
+    localStorage.setItem('previewKey', previewKey)
+  }, [previewKey])
 
   useEffect(() => {
     const poll = async (): Promise<void> => {
@@ -115,10 +125,29 @@ function App(): React.JSX.Element {
           }
         }
       }
+
+      // Ctrl+[previewKey] → show pane content popup
+      if (e.ctrlKey && e.key === previewKey && !e.metaKey) {
+        e.preventDefault()
+        if (selected) {
+          window.api.capturePane(selected).then((content) => {
+            setPaneContent(content)
+            requestAnimationFrame(() => {
+              paneViewerRef.current?.scrollTo(0, paneViewerRef.current.scrollHeight)
+            })
+          })
+        }
+      }
+
+      // Escape → close popup
+      if (e.key === 'Escape' && paneContent !== null) {
+        e.preventDefault()
+        setPaneContent(null)
+      }
     }
     window.addEventListener('keydown', handleGlobalKeyDown)
     return () => window.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [selected, panes, choiceModifier])
+  }, [selected, panes, choiceModifier, previewKey, paneContent])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -359,8 +388,50 @@ function App(): React.JSX.Element {
               </button>
             </div>
           </div>
+          <label className="setting-row">
+            <span className="setting-label">Preview Key</span>
+            {editingPreviewKey ? (
+              <span
+                className="key-capture"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  e.preventDefault()
+                  if (e.key.length === 1 && !e.metaKey && !e.ctrlKey) {
+                    setPreviewKey(e.key.toLowerCase())
+                    setEditingPreviewKey(false)
+                  }
+                  if (e.key === 'Escape') {
+                    setEditingPreviewKey(false)
+                  }
+                }}
+                ref={(el) => el?.focus()}
+              >
+                Press a key...
+              </span>
+            ) : (
+              <button className="key-display" onClick={() => setEditingPreviewKey(true)}>
+                Ctrl+{previewKey.toUpperCase()}
+              </button>
+            )}
+          </label>
         </div>
       </div>
+
+      {paneContent !== null && (
+        <div className="pane-overlay" onClick={() => setPaneContent(null)}>
+          <div className="pane-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="pane-popup-header">
+              <span className="pane-popup-title">{selected}</span>
+              <button className="pane-popup-close" onClick={() => setPaneContent(null)}>
+                Esc
+              </button>
+            </div>
+            <pre ref={paneViewerRef} className="pane-popup-content">
+              {paneContent}
+            </pre>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

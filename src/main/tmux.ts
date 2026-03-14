@@ -176,3 +176,12 @@ export async function sendInput(
     return { success: false, error: String(e) }
   }
 }
+
+export async function capturePane(target: string): Promise<string> {
+  if (!TARGET_PATTERN.test(target)) return ''
+  try {
+    return await run(['capture-pane', '-t', target, '-p', '-S', '-500'])
+  } catch {
+    return ''
+  }
+}

@@ -538,3 +538,123 @@
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-dim);
 }
+
+/* ── Key capture ── */
+.key-display {
+  padding: 2px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text);
+  font-size: 9px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  letter-spacing: 0.5px;
+}
+
+.key-display:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.key-capture {
+  padding: 2px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--accent);
+  background: var(--accent-muted);
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  outline: none;
+  animation: pulse-capture 1s ease-in-out infinite;
+}
+
+@keyframes pulse-capture {
+  0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+  50% { box-shadow: 0 0 0 3px var(--accent-glow); }
+}
+
+/* ── Pane viewer popup ── */
+.pane-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: overlay-in 0.15s ease;
+  -webkit-app-region: no-drag;
+}
+
+.pane-popup {
+  width: 90%;
+  height: 85%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  animation: popup-in 0.15s ease;
+}
+
+.pane-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.pane-popup-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+}
+
+.pane-popup-close {
+  padding: 2px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-dim);
+  font-size: 9px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.pane-popup-close:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.pane-popup-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 10px;
+  margin: 0;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popup-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
