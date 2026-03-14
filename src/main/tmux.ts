@@ -19,10 +19,29 @@ function findTmux(): string {
 
 const tmuxBin = findTmux()
 
+function getTmuxSocketPath(): string | undefined {
+  // When launched from Finder, TMUX env var is not inherited.
+  // Try common default socket paths.
+  const candidates = [
+    process.env['TMUX']?.split(',')[0],
+    `/private/tmp/tmux-${process.getuid()}/default`
+  ]
+  for (const c of candidates) {
+    if (c && existsSync(c)) return c
+  }
+  return undefined
+}
+
 function run(args: string[]): Promise<string> {
+  const socketPath = getTmuxSocketPath()
+  const fullArgs = socketPath ? ['-S', socketPath, ...args] : args
+
   return new Promise((resolve, reject) => {
-    execFile(tmuxBin, args, { timeout: 5000 }, (error, stdout) => {
-      if (error) return reject(error)
+    execFile(tmuxBin, fullArgs, { timeout: 5000 }, (error, stdout, stderr) => {
+      if (error) {
+        console.error('[tmux]', error.message, stderr)
+        return reject(error)
+      }
       resolve(stdout)
     })
   })
