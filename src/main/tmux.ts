@@ -36,7 +36,7 @@ function getTmuxSocketPath(): string | undefined {
   // Try common default socket paths.
   const candidates = [
     process.env['TMUX']?.split(',')[0],
-    `/private/tmp/tmux-${process.getuid()}/default`
+    `/private/tmp/tmux-${process.getuid?.() ?? 0}/default`
   ]
   for (const c of candidates) {
     if (c && existsSync(c)) return c
