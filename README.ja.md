@@ -17,7 +17,21 @@ huge-mouse は他のウィンドウの上に常駐し、tmux 内で動作中の 
 
 ## インストール
 
-[Releases](https://github.com/yugo-ibuki/huge-mouse/releases) ページから最新版をダウンロードし、アプリを開いてください。
+### Homebrew（推奨）
+
+```bash
+brew install --cask yugo-ibuki/tap/huge-mouse
+```
+
+### 手動インストール
+
+[Releases](https://github.com/yugo-ibuki/huge-mouse/releases) ページから最新のDMGをダウンロードし、アプリを `/Applications` にドラッグしてください。
+
+### macOS Gatekeeper の警告
+
+初回起動時、公証されていないためmacOSがアプリをブロックすることがあります。
+
+**システム設定 → プライバシーとセキュリティ** を開き、下部の「このまま開く」をクリックしてください。
 
 ## 使い方
 

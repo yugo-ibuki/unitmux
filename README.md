@@ -17,7 +17,21 @@ It auto-discovers active AI panes, shows their status, and even lets you click n
 
 ## Install
 
-Download the latest release from the [Releases](https://github.com/yugo-ibuki/huge-mouse/releases) page and open the app.
+### Homebrew (recommended)
+
+```bash
+brew install --cask yugo-ibuki/tap/huge-mouse
+```
+
+### Manual
+
+Download the latest DMG from the [Releases](https://github.com/yugo-ibuki/huge-mouse/releases) page and drag the app to `/Applications`.
+
+### macOS Gatekeeper warning
+
+On first launch, macOS may block the app because it is not notarized. To open it:
+
+**System Settings → Privacy & Security** → scroll down and click **Open Anyway** next to the blocked message.
 
 ## How to use
 
