@@ -88,10 +88,29 @@ function App(): React.JSX.Element {
           return prev
         })
       }
+
+      // Ctrl+Number → send choice directly to selected pane
+      if (e.ctrlKey && /^[1-9]$/.test(e.key)) {
+        const pane = panes.find((p) => p.target === selected)
+        if (pane && pane.choices.length > 0) {
+          const choice = pane.choices.find((c) => c.number === e.key)
+          if (choice) {
+            e.preventDefault()
+            window.api.sendInput(pane.target, choice.number).then((result) => {
+              if (result.success) {
+                setStatus({ message: `Sent ${choice.number} → ${pane.target}`, ok: true })
+              } else {
+                setStatus({ message: result.error ?? 'Failed', ok: false })
+              }
+              setTimeout(() => setStatus(null), 2000)
+            })
+          }
+        }
+      }
     }
     window.addEventListener('keydown', handleGlobalKeyDown)
     return () => window.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [selected])
+  }, [selected, panes])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
