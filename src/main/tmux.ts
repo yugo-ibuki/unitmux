@@ -120,7 +120,9 @@ async function capturePaneContent(target: string): Promise<string> {
   }
 }
 
-const CHOICE_PATTERN = /^\s*[❯›>☞ ]\s*(\d+)[.)]\s+(.+)$/
+// Match only lines with special prompt markers (❯›>☞) followed by numbered choices.
+// Space is intentionally excluded to avoid false positives on regular numbered lists.
+const CHOICE_PATTERN = /^\s*[❯›>☞]\s*(\d+)[.)]\s+(.+)$/
 
 function parseChoices(content: string): TmuxChoice[] {
   const lines = content.split('\n').slice(-20)
