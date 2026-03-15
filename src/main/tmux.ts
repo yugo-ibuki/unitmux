@@ -61,7 +61,7 @@ function run(args: string[]): Promise<string> {
 
 function runGit(args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
-    execFile(gitBin, args, { timeout: 3000 }, (error, stdout) => {
+    execFile(gitBin, args, { timeout: 30000 }, (error, stdout) => {
       if (error) return reject(error)
       resolve(stdout)
     })
