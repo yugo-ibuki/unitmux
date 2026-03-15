@@ -214,7 +214,9 @@ export async function sendInput(
   }
 
   try {
-    // Send 'i' to ensure target is in insert mode
+    // Ensure insert mode: Escape (go to normal) → i (enter insert)
+    await run(['send-keys', '-t', target, 'Escape'])
+    await new Promise((r) => setTimeout(r, 50))
     await run(['send-keys', '-t', target, 'i'])
     await new Promise((r) => setTimeout(r, 100))
 
