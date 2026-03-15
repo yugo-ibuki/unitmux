@@ -1,7 +1,10 @@
 node_modules
 dist
 out
-.DS_Store
+**/.DS_Store
 .eslintcache
 *.log*
 .superpowers/
+web/node_modules
+web/docs/.vitepress/cache
+web/docs/.vitepress/dist
