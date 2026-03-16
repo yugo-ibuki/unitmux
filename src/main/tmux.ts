@@ -226,7 +226,8 @@ const TARGET_PATTERN = /^[a-zA-Z0-9_-]+:\d+\.\d+$/
 
 export async function sendInput(
   target: string,
-  text: string
+  text: string,
+  vimMode = false
 ): Promise<{ success: boolean; error?: string }> {
   if (!TARGET_PATTERN.test(target)) {
     return { success: false, error: 'Invalid target format' }
@@ -241,8 +242,9 @@ export async function sendInput(
     const { status } = detectStatus(title.trim(), content)
     const isChoiceResponse = status === 'waiting' && /^[1-9]$/.test(text)
 
-    if (!isChoiceResponse) {
-      // Ensure insert mode: Escape (go to normal) → i (enter insert)
+    // Only send Escape+i when Claude CLI is in vim input mode.
+    // In native (readline) mode, Escape+i would type a literal "i".
+    if (!isChoiceResponse && vimMode) {
       await run(['send-keys', '-t', target, 'Escape'])
       await new Promise((r) => setTimeout(r, 50))
       await run(['send-keys', '-t', target, 'i'])

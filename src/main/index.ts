@@ -41,8 +41,8 @@ app.whenReady().then(() => {
     }
   })
 
-  ipcMain.handle('tmux:send-input', async (_event, { target, text }) => {
-    return sendInput(target, text)
+  ipcMain.handle('tmux:send-input', async (_event, { target, text, vimMode }) => {
+    return sendInput(target, text, vimMode)
   })
 
   ipcMain.handle('tmux:capture-pane', async (_event, target: string) => {

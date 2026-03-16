@@ -30,8 +30,8 @@ export interface SendResult {
 
 const api = {
   listSessions: (): Promise<TmuxPane[]> => ipcRenderer.invoke('tmux:list-sessions'),
-  sendInput: (target: string, text: string): Promise<SendResult> =>
-    ipcRenderer.invoke('tmux:send-input', { target, text }),
+  sendInput: (target: string, text: string, vimMode = false): Promise<SendResult> =>
+    ipcRenderer.invoke('tmux:send-input', { target, text, vimMode }),
   capturePane: (target: string): Promise<string> =>
     ipcRenderer.invoke('tmux:capture-pane', target),
   getPaneDetail: (target: string): Promise<PaneDetail | null> =>

@@ -38,7 +38,7 @@ interface SendResult {
 
 interface TmuxAPI {
   listSessions: () => Promise<TmuxPane[]>
-  sendInput: (target: string, text: string) => Promise<SendResult>
+  sendInput: (target: string, text: string, vimMode?: boolean) => Promise<SendResult>
   capturePane: (target: string) => Promise<string>
   getPaneDetail: (target: string) => Promise<PaneDetail | null>
   gitAdd: (cwd: string) => Promise<SendResult>
