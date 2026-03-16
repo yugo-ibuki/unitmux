@@ -60,6 +60,12 @@ function App(): React.JSX.Element {
   const [focusKey, setFocusKey] = useState(() => {
     return localStorage.getItem('focusKey') ?? 'h'
   })
+  const [fontSize, setFontSize] = useState(() => {
+    return Number(localStorage.getItem('fontSize') ?? '12')
+  })
+  const [sendKey, setSendKey] = useState<'enter' | 'cmd+enter'>(() => {
+    return (localStorage.getItem('sendKey') as 'enter' | 'cmd+enter') ?? 'cmd+enter'
+  })
   const [vimMode, setVimMode] = useState(() => {
     return localStorage.getItem('vimMode') === 'true'
   })
@@ -91,6 +97,10 @@ function App(): React.JSX.Element {
     window.addEventListener('focus', focusTextarea)
     return () => window.removeEventListener('focus', focusTextarea)
   }, [paneContent, paneDetail, gitPopup])
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--font-size', `${fontSize}px`)
+  }, [fontSize])
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -274,10 +284,26 @@ function App(): React.JSX.Element {
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.nativeEvent.isComposing) return
-      if (e.key === 'Enter' && e.metaKey) {
-        e.preventDefault()
-        send()
-        return
+      if (e.key === 'Enter') {
+        const isSend =
+          sendKey === 'cmd+enter' ? e.metaKey : !e.metaKey && !e.shiftKey
+        if (isSend) {
+          e.preventDefault()
+          send()
+          return
+        }
+        if (sendKey === 'enter' && e.metaKey) {
+          e.preventDefault()
+          const ta = e.currentTarget as HTMLTextAreaElement
+          const start = ta.selectionStart
+          const end = ta.selectionEnd
+          const val = ta.value
+          setText(val.substring(0, start) + '\n' + val.substring(end))
+          requestAnimationFrame(() => {
+            ta.selectionStart = ta.selectionEnd = start + 1
+          })
+          return
+        }
       }
       if (e.key === 'ArrowUp' && !e.metaKey && history.length > 0) {
         const ta = e.currentTarget as HTMLTextAreaElement
@@ -309,7 +335,7 @@ function App(): React.JSX.Element {
         }
       }
     },
-    [send, history, text]
+    [send, sendKey, history, text]
   )
 
   const toggleAlwaysOnTop = async (): Promise<void> => {
@@ -444,7 +470,7 @@ function App(): React.JSX.Element {
             ref={textareaRef}
             className="textarea"
             rows={5}
-            placeholder="Type input to send... (Cmd+Enter to send)"
+            placeholder={`Type input to send... (${sendKey === 'cmd+enter' ? 'Cmd+Enter' : 'Enter'} to send)`}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -488,6 +514,22 @@ function App(): React.JSX.Element {
               }}
             />
           </label>
+          <label className="setting-row">
+            <span className="setting-label">Font Size</span>
+            <input
+              type="range"
+              className="opacity-slider"
+              min="8"
+              max="18"
+              step="1"
+              value={fontSize}
+              onChange={(e) => {
+                const v = Number(e.target.value)
+                setFontSize(v)
+                localStorage.setItem('fontSize', String(v))
+              }}
+            />
+          </label>
           <div
             className="setting-row"
             style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}
@@ -525,6 +567,32 @@ function App(): React.JSX.Element {
                 onClick={() => setChoiceModifier('cmd')}
               >
                 Cmd
+              </button>
+            </div>
+          </div>
+          <div
+            className="setting-row"
+            style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}
+          >
+            <span className="setting-label">Send Key</span>
+            <div className="theme-segment">
+              <button
+                className={`theme-btn ${sendKey === 'cmd+enter' ? 'theme-btn-active' : ''}`}
+                onClick={() => {
+                  setSendKey('cmd+enter')
+                  localStorage.setItem('sendKey', 'cmd+enter')
+                }}
+              >
+                ⌘↵
+              </button>
+              <button
+                className={`theme-btn ${sendKey === 'enter' ? 'theme-btn-active' : ''}`}
+                onClick={() => {
+                  setSendKey('enter')
+                  localStorage.setItem('sendKey', 'enter')
+                }}
+              >
+                ↵
               </button>
             </div>
           </div>
