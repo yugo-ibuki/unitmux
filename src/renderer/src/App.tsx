@@ -273,6 +273,7 @@ function App(): React.JSX.Element {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      if (e.nativeEvent.isComposing) return
       if (e.key === 'Enter' && e.metaKey) {
         e.preventDefault()
         send()
