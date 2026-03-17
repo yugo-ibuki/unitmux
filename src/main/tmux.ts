@@ -59,6 +59,7 @@ function run(args: string[]): Promise<string> {
   })
 }
 
+
 function runGit(args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
     execFile(gitBin, args, { timeout: 30000 }, (error, stdout) => {
@@ -176,12 +177,15 @@ function parsePrompt(content: string): string {
   return promptLines.join('\n').trim()
 }
 
-function detectStatus(title: string, content: string): { status: PaneStatus; choices: TmuxChoice[]; prompt: string } {
+// Codex hint line contains "send", "newline", "transcript", "quit" when idle.
+// Unicode chars (⏎, ⌃) may not survive tmux capture-pane, so match ASCII keywords.
+const CODEX_IDLE_PATTERN = /send\s+.*newline\s+.*quit/
+
+function detectStatusClaude(title: string, content: string): { status: PaneStatus; choices: TmuxChoice[]; prompt: string } {
   if (!title.includes('✳')) return { status: 'busy', choices: [], prompt: '' }
 
   const choices = parseChoices(content)
 
-  // If numbered choices are detected, it's a waiting state regardless of prompt text
   if (choices.length > 0) {
     return { status: 'waiting', choices, prompt: parsePrompt(content) }
   }
@@ -193,6 +197,36 @@ function detectStatus(title: string, content: string): { status: PaneStatus; cho
     }
   }
   return { status: 'idle', choices: [], prompt: '' }
+}
+
+// Codex shows "Esc to interrupt" during any processing state
+const CODEX_BUSY_PATTERN = /Esc to interrupt/
+
+// Codex presents options as indented "- " list items
+const CODEX_OPTION_PATTERN = /^\s+-\s+\S/
+// "- ...?" is a definitive question/choice indicator
+const CODEX_QUESTION_PATTERN = /^\s+-\s+.+\?/
+
+function detectStatusCodex(content: string): { status: PaneStatus; choices: TmuxChoice[]; prompt: string } {
+  if (CODEX_BUSY_PATTERN.test(content)) {
+    return { status: 'busy', choices: [], prompt: '' }
+  }
+  const lines = content.split('\n').slice(-15)
+  const isIdle = lines.some((line) => CODEX_IDLE_PATTERN.test(line))
+  if (isIdle) {
+    const hasQuestion = lines.some((line) => CODEX_QUESTION_PATTERN.test(line))
+    const optionCount = lines.filter((line) => CODEX_OPTION_PATTERN.test(line)).length
+    if (hasQuestion || optionCount >= 2) {
+      return { status: 'waiting', choices: [], prompt: '' }
+    }
+    return { status: 'idle', choices: [], prompt: '' }
+  }
+  return { status: 'busy', choices: [], prompt: '' }
+}
+
+function detectStatus(title: string, content: string, command: string): { status: PaneStatus; choices: TmuxChoice[]; prompt: string } {
+  if (command === 'codex') return detectStatusCodex(content)
+  return detectStatusClaude(title, content)
 }
 
 export async function listPanes(): Promise<TmuxPane[]> {
@@ -207,12 +241,13 @@ export async function listPanes(): Promise<TmuxPane[]> {
       const [target, pid, command, title] = line.split('|')
       return { target, pid, command, title, status: 'busy' as PaneStatus, choices: [] as TmuxChoice[], prompt: '' }
     })
-    .filter((pane) => /^(claude|codex)$/i.test(pane.command))
+    // Support popular wrappers like `ai` in addition to `claude` and `codex`.
+    .filter((pane) => /^(claude|codex|ai)$/i.test(pane.command))
 
   await Promise.all(
     panes.map(async (pane) => {
       const content = await capturePaneContent(pane.target)
-      const result = detectStatus(pane.title, content)
+      const result = detectStatus(pane.title, content, pane.command)
       pane.status = result.status
       pane.choices = result.choices
       pane.prompt = result.prompt
@@ -238,8 +273,9 @@ export async function sendInput(
     // When choices are visible and input is a single digit (1-9),
     // skip insert mode switch since choices work in normal mode.
     const content = await capturePane(target)
-    const title = await run(['display-message', '-t', target, '-p', '#{pane_title}'])
-    const { status } = detectStatus(title.trim(), content)
+    const titleAndCmd = await run(['display-message', '-t', target, '-p', '#{pane_title}|#{pane_current_command}'])
+    const [title, command] = titleAndCmd.trim().split('|')
+    const { status } = detectStatus(title, content, command)
     const isChoiceResponse = status === 'waiting' && /^[1-9]$/.test(text)
 
     // Only send Escape+i when Claude CLI is in vim input mode.
@@ -251,8 +287,15 @@ export async function sendInput(
       await new Promise((r) => setTimeout(r, 100))
     }
 
+    const isCodex = command === 'codex'
     const hasNewlines = text.includes('\n')
-    if (hasNewlines) {
+
+    if (isCodex) {
+      // Codex ignores Enter from external tmux clients. Use run-shell
+      // to execute send-keys from within the tmux server process itself.
+      await run(['send-keys', '-t', target, '-l', text])
+      await run(['run-shell', `${tmuxBin} send-keys -t ${target} Enter`])
+    } else if (hasNewlines) {
       // Send bracketed paste escape sequences to preserve newlines
       const trimmed = text.replace(/\n+$/, '')
       await run(['send-keys', '-t', target, '\x1b[200~'])

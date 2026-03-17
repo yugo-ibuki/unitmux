@@ -13,6 +13,10 @@
   --accent-glow: rgba(91, 141, 239, 0.15);
   --accent-hover: #4a7de0;
   --accent-muted: rgba(91, 141, 239, 0.08);
+  --codex: #ef4444;
+  --codex-glow: rgba(239, 68, 68, 0.15);
+  --codex-hover: #dc2626;
+  --codex-muted: rgba(239, 68, 68, 0.08);
   --green: #34d399;
   --green-glow: rgba(52, 211, 153, 0.25);
   --orange: #f59e0b;
@@ -41,6 +45,10 @@
   --accent-glow: rgba(74, 125, 224, 0.15);
   --accent-hover: #3a6dd0;
   --accent-muted: rgba(74, 125, 224, 0.08);
+  --codex: #dc2626;
+  --codex-glow: rgba(220, 38, 38, 0.15);
+  --codex-hover: #b91c1c;
+  --codex-muted: rgba(220, 38, 38, 0.08);
   --green: #16a372;
   --green-glow: rgba(22, 163, 114, 0.25);
   --orange: #d97706;
@@ -183,6 +191,42 @@
 .tag-active:hover {
   background: var(--accent-hover);
   border-color: var(--accent-hover);
+}
+
+.tag-active.tag-codex {
+  background: var(--codex);
+  border-color: var(--codex);
+  box-shadow: 0 0 8px var(--codex-glow);
+}
+
+.tag-active.tag-codex:hover {
+  background: var(--codex-hover);
+  border-color: var(--codex-hover);
+}
+
+.cmd-badge {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.cmd-badge-claude {
+  color: var(--accent);
+  background: var(--accent-muted);
+}
+
+.cmd-badge-codex {
+  color: var(--codex);
+  background: var(--codex-muted);
+}
+
+.tag-active .cmd-badge {
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .tag-dim {

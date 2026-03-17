@@ -363,7 +363,7 @@ function App(): React.JSX.Element {
               {group.map((p) => (
                 <div key={p.target} className="tag-row">
                   <button
-                    className={`tag ${selected === p.target ? 'tag-active' : ''} ${p.status !== 'idle' ? 'tag-dim' : ''}`}
+                    className={`tag ${selected === p.target ? 'tag-active' : ''} ${p.status !== 'idle' ? 'tag-dim' : ''} ${p.command === 'codex' ? 'tag-codex' : ''}`}
                     onClick={() => setSelected(p.target)}
                     onKeyDown={(e) => {
                       if (e.key === 'Tab' && !e.shiftKey && p.choices.length > 0) {
@@ -375,6 +375,7 @@ function App(): React.JSX.Element {
                     }}
                   >
                     <span className={`dot dot-${p.status}`} />
+                    <span className={`cmd-badge cmd-badge-${p.command}`}>{p.command === 'codex' ? 'CX' : 'CC'}</span>
                     {p.target.split(':')[1]}
                   </button>
                   {p.choices.length > 0 && (
