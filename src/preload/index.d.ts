@@ -49,6 +49,9 @@ interface TmuxAPI {
   setOpacity: (value: number) => Promise<number>
   getOpacity: () => Promise<number>
   setFocusShortcut: (key: string) => Promise<boolean>
+  toggleCompact: () => Promise<boolean>
+  onCompactChanged: (callback: (compact: boolean) => void) => () => void
+  onFocusTextarea: (callback: () => void) => () => void
 }
 
 declare global {

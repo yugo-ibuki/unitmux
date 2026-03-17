@@ -79,6 +79,30 @@ app.whenReady().then(() => {
     return win?.getOpacity() ?? 1
   })
 
+  let savedBounds: Electron.Rectangle | null = null
+  let isCompact = false
+
+  const toggleCompact = (): boolean => {
+    const win = BrowserWindow.getAllWindows()[0]
+    if (!win) return isCompact
+    if (!isCompact) {
+      savedBounds = win.getBounds()
+      const bounds = win.getBounds()
+      win.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: 70 })
+      isCompact = true
+    } else if (savedBounds) {
+      win.setBounds(savedBounds)
+      savedBounds = null
+      isCompact = false
+    }
+    win.webContents.send('compact-changed', isCompact)
+    return isCompact
+  }
+
+  ipcMain.handle('window:toggle-compact', () => {
+    return toggleCompact()
+  })
+
   createWindow()
 
   const registerFocusShortcut = (key: string): boolean => {
@@ -87,8 +111,10 @@ app.whenReady().then(() => {
     return globalShortcut.register(accelerator, () => {
       const win = BrowserWindow.getAllWindows()[0]
       if (win) {
+        if (isCompact) toggleCompact()
         win.show()
         win.focus()
+        win.webContents.send('focus-textarea')
       }
     })
   }

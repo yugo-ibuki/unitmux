@@ -48,6 +48,18 @@ const api = {
   getOpacity: (): Promise<number> => ipcRenderer.invoke('window:get-opacity'),
   setFocusShortcut: (key: string): Promise<boolean> =>
     ipcRenderer.invoke('window:set-focus-shortcut', key),
+  toggleCompact: (): Promise<boolean> =>
+    ipcRenderer.invoke('window:toggle-compact'),
+  onCompactChanged: (callback: (compact: boolean) => void): (() => void) => {
+    const handler = (_event: unknown, compact: boolean): void => callback(compact)
+    ipcRenderer.on('compact-changed', handler)
+    return () => ipcRenderer.removeListener('compact-changed', handler)
+  },
+  onFocusTextarea: (callback: () => void): (() => void) => {
+    const handler = (): void => callback()
+    ipcRenderer.on('focus-textarea', handler)
+    return () => ipcRenderer.removeListener('focus-textarea', handler)
+  },
 }
 
 if (process.contextIsolated) {

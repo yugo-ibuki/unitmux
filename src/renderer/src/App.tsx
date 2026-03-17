@@ -69,6 +69,11 @@ function App(): React.JSX.Element {
   const [vimMode, setVimMode] = useState(() => {
     return localStorage.getItem('vimMode') === 'true'
   })
+  const [compact, setCompact] = useState(false)
+  const [compactKey, setCompactKey] = useState(() => {
+    return localStorage.getItem('compactKey') ?? 'w'
+  })
+  const [editingCompactKey, setEditingCompactKey] = useState(false)
   const [editingPreviewKey, setEditingPreviewKey] = useState(false)
   const [editingDetailKey, setEditingDetailKey] = useState(false)
   const [editingGitKey, setEditingGitKey] = useState(false)
@@ -103,6 +108,21 @@ function App(): React.JSX.Element {
   }, [fontSize])
 
   useEffect(() => {
+    return window.api.onCompactChanged((value) => {
+      setCompact(value)
+      if (!value) {
+        requestAnimationFrame(() => textareaRef.current?.focus())
+      }
+    })
+  }, [])
+
+  useEffect(() => {
+    return window.api.onFocusTextarea(() => {
+      requestAnimationFrame(() => textareaRef.current?.focus())
+    })
+  }, [])
+
+  useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('theme', theme)
   }, [theme])
@@ -114,6 +134,10 @@ function App(): React.JSX.Element {
   useEffect(() => {
     localStorage.setItem('previewKey', previewKey)
   }, [previewKey])
+
+  useEffect(() => {
+    localStorage.setItem('compactKey', compactKey)
+  }, [compactKey])
 
   useEffect(() => {
     localStorage.setItem('focusKey', focusKey)
@@ -205,6 +229,12 @@ function App(): React.JSX.Element {
         }
       }
 
+      // Ctrl+[compactKey] → toggle compact mode
+      if (e.ctrlKey && e.key === compactKey && !e.metaKey) {
+        e.preventDefault()
+        window.api.toggleCompact()
+      }
+
       // Ctrl+[previewKey] → show pane content popup
       if (e.ctrlKey && e.key === previewKey && !e.metaKey) {
         e.preventDefault()
@@ -279,7 +309,7 @@ function App(): React.JSX.Element {
     }
     window.addEventListener('keydown', handleGlobalKeyDown)
     return () => window.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [selected, panes, choiceModifier, vimMode, previewKey, detailKey, gitKey, paneContent, paneDetail, gitPopup])
+  }, [selected, panes, choiceModifier, vimMode, compactKey, previewKey, detailKey, gitKey, paneContent, paneDetail, gitPopup])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -430,7 +460,7 @@ function App(): React.JSX.Element {
         </button>
       </div>
 
-      <div className="main-area">
+      {!compact && <div className="main-area">
         <div className="content">
           {selectedPane?.prompt && (
             <div className="prompt-box">
@@ -611,6 +641,32 @@ function App(): React.JSX.Element {
             </button>
           </label>
           <label className="setting-row">
+            <span className="setting-label">Compact Key</span>
+            {editingCompactKey ? (
+              <span
+                className="key-capture"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  e.preventDefault()
+                  if (e.key.length === 1 && !e.metaKey && !e.ctrlKey) {
+                    setCompactKey(e.key.toLowerCase())
+                    setEditingCompactKey(false)
+                  }
+                  if (e.key === 'Escape') {
+                    setEditingCompactKey(false)
+                  }
+                }}
+                ref={(el) => el?.focus()}
+              >
+                Press a key...
+              </span>
+            ) : (
+              <button className="key-display" onClick={() => setEditingCompactKey(true)}>
+                Ctrl+{compactKey.toUpperCase()}
+              </button>
+            )}
+          </label>
+          <label className="setting-row">
             <span className="setting-label">Preview Key</span>
             {editingPreviewKey ? (
               <span
@@ -715,7 +771,7 @@ function App(): React.JSX.Element {
             )}
           </label>
         </div>
-      </div>
+      </div>}
 
       {paneContent !== null && (
         <div
