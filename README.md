@@ -38,7 +38,7 @@ On first launch, macOS may block the app because it is not notarized. To open it
 1. Start `claude` or `codex` inside a tmux pane
 2. Open huge-mouse — it automatically finds your AI panes
 3. Select a pane from the tags at the top
-4. Type your message and press `Cmd+Enter` to send
+4. Type your message and press `Cmd+Enter` to send (configurable to `Enter` in settings)
 
 ### Status indicators
 
@@ -56,7 +56,7 @@ When `claude` or `codex` presents numbered choices (e.g. "1. Yes / 2. No"), clic
 
 | Shortcut | Action |
 |----------|--------|
-| `Cmd+Enter` | Send input |
+| `Cmd+Enter` or `Enter` | Send input (configurable) |
 | `Cmd+↑` | Switch to previous pane |
 | `Cmd+↓` | Switch to next pane |
 | `Ctrl+1-9` | Send numbered choice directly (modifier key configurable) |
@@ -84,8 +84,11 @@ Click the gear icon to access settings:
 
 - **Always on Top** — keep the window above other windows
 - **Opacity** — adjust window transparency (50%–100%)
+- **Font Size** — adjust text size for textarea and preview log
 - **Theme** — switch between Dark and Light
 - **Choice Key** — change the modifier for quick choice shortcuts (`Ctrl` or `Cmd`)
+- **Send Key** — choose between `Cmd+Enter` or `Enter` to send (the other key inserts a newline)
+- **Vim Mode** — enable Escape+i insert mode switch for Claude CLI's vim editor mode
 - **Preview Key** — change the key for pane content preview (`Ctrl+<key>`)
 - **Detail Key** — change the key for session detail popup (`Ctrl+<key>`)
 - **Git Key** — change the key for git operations popup (`Ctrl+<key>`)

@@ -38,7 +38,7 @@ brew install --cask yugo-ibuki/tap/huge-mouse
 1. tmux ペインで `claude` または `codex` を起動する
 2. huge-mouse を開く — AI ペインが自動的に検出される
 3. 上部のタグからペインを選択する
-4. メッセージを入力して `Cmd+Enter` で送信
+4. メッセージを入力して `Cmd+Enter` で送信（設定で `Enter` に変更可能）
 
 ### ステータス表示
 
@@ -56,7 +56,7 @@ brew install --cask yugo-ibuki/tap/huge-mouse
 
 | ショートカット | アクション |
 |---------------|-----------|
-| `Cmd+Enter` | 入力を送信 |
+| `Cmd+Enter` または `Enter` | 入力を送信（設定で変更可能） |
 | `Cmd+↑` | 前のペインに切り替え |
 | `Cmd+↓` | 次のペインに切り替え |
 | `Ctrl+1-9` | 番号付き選択肢を直接送信（修飾キーは設定で変更可能） |
@@ -84,8 +84,11 @@ brew install --cask yugo-ibuki/tap/huge-mouse
 
 - **常時最前面表示** — ウィンドウを他のウィンドウより手前に固定
 - **Opacity** — ウィンドウの透明度を調整（50%〜100%）
+- **Font Size** — テキストエリアとプレビューログの文字サイズを調整
 - **テーマ** — ダーク / ライトの切り替え
 - **Choice Key** — 選択肢ショートカットの修飾キーを変更（`Ctrl` または `Cmd`）
+- **Send Key** — 送信キーを `Cmd+Enter` または `Enter` に変更（もう一方が改行になる）
+- **Vim Mode** — Claude CLIのvimエディタモード用にEscape+iのインサートモード切り替えを有効化
 - **Preview Key** — プレビュー表示のキーを変更（`Ctrl+<キー>`）
 - **Detail Key** — セッション詳細のキーを変更（`Ctrl+<キー>`）
 - **Git Key** — git操作のキーを変更（`Ctrl+<キー>`）
