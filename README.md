@@ -40,13 +40,17 @@ On first launch, macOS may block the app because it is not notarized. To open it
 3. Select a pane from the tags at the top
 4. Type your message and press `Cmd+Enter` to send (configurable to `Enter` in settings)
 
+### Pane badges
+
+Each pane tag shows a badge indicating which tool is running: **CC** (Claude Code) in blue, **CX** (Codex) in green.
+
 ### Status indicators
 
 | Indicator | Meaning |
 |-----------|---------|
 | Green dot | Ready for input |
-| Yellow dot | Waiting for your response — choice buttons appear |
-| Gray dot | Busy, processing |
+| Orange dot | Busy, processing |
+| Gray dot | Waiting for your response — choice buttons appear |
 
 ### When the AI asks a question
 
@@ -64,11 +68,14 @@ When `claude` or `codex` presents numbered choices (e.g. "1. Yes / 2. No"), clic
 | `Ctrl+P` | Open pane content preview (key configurable) |
 | `Ctrl+D` | Open session detail popup (key configurable) |
 | `Ctrl+G` | Open git operations popup (key configurable) |
+| `Ctrl+W` | Toggle compact mode — shrinks window to tab bar only (key configurable) |
 | `↑` / `↓` | Navigate input history |
 | `Cmd+Shift+H` | Focus huge-mouse from any app (key configurable) |
 | `Escape` | Close popup / refocus textarea |
 
 Popups support vim-style navigation: `j`/`k` (scroll), `d`/`u` (half-page), `g`/`G` (top/bottom), `q` (close).
+
+The pane preview (`Ctrl+P`) opens scrolled to the bottom and highlights Claude's last response with a blue accent border.
 
 ### Session detail
 
@@ -89,6 +96,7 @@ Click the gear icon to access settings:
 - **Choice Key** — change the modifier for quick choice shortcuts (`Ctrl` or `Cmd`)
 - **Send Key** — choose between `Cmd+Enter` or `Enter` to send (the other key inserts a newline)
 - **Vim Mode** — enable Escape+i insert mode switch for Claude CLI's vim editor mode
+- **Compact Key** — change the key for compact mode toggle (`Ctrl+<key>`)
 - **Preview Key** — change the key for pane content preview (`Ctrl+<key>`)
 - **Detail Key** — change the key for session detail popup (`Ctrl+<key>`)
 - **Git Key** — change the key for git operations popup (`Ctrl+<key>`)
