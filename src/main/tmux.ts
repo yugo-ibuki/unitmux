@@ -242,7 +242,20 @@ export async function listPanes(): Promise<TmuxPane[]> {
       return { target, pid, command, title, status: 'busy' as PaneStatus, choices: [] as TmuxChoice[], prompt: '' }
     })
     // Support popular wrappers like `ai` in addition to `claude` and `codex`.
-    .filter((pane) => /^(claude|codex|ai)$/i.test(pane.command))
+    // Also check pane_title as a fallback — when codex spawns subprocesses,
+    // pane_current_command may change to `node` while the title still contains `codex`.
+    .filter((pane) => {
+      if (/^(claude|codex|ai)$/i.test(pane.command)) return true
+      if (/\b(claude|codex)\b/i.test(pane.title)) {
+        // pane_current_command changed to a subprocess (e.g. node).
+        // Normalize command so detectStatus routes correctly.
+        const titleLower = pane.title.toLowerCase()
+        if (titleLower.includes('codex')) pane.command = 'codex'
+        else if (titleLower.includes('claude')) pane.command = 'claude'
+        return true
+      }
+      return false
+    })
 
   await Promise.all(
     panes.map(async (pane) => {
