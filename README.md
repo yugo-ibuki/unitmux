@@ -66,7 +66,9 @@ When `claude` or `codex` presents numbered choices (e.g. "1. Yes / 2. No"), clic
 | `Ctrl+1-9` | Send numbered choice directly (modifier key configurable) |
 | `Ctrl+H` / `Ctrl+L` | Switch to previous / next pane |
 | `Ctrl+P` | Open pane content preview (key configurable) |
+| `Ctrl+N` | Create a new session (select target tmux session and command) |
 | `Ctrl+D` | Open session detail popup (key configurable) |
+| `Ctrl+C` | Close session with confirmation (when detail panel is open) |
 | `Ctrl+G` | Open git operations popup (key configurable) |
 | `Ctrl+W` | Toggle compact mode — shrinks window to tab bar only (key configurable) |
 | `↑` / `↓` | Navigate input history |
@@ -79,7 +81,11 @@ The pane preview (`Ctrl+P`) opens scrolled to the bottom and highlights Claude's
 
 ### Session detail
 
-Press `Ctrl+D` to view details of the selected pane: target, command, model, session ID, PID, CWD, and git branch/status.
+Press `Ctrl+D` to view details of the selected pane: target, command, model, session ID, PID, CWD, and git branch/status. The detail panel also has a **Close Session** button to terminate the pane. Pressing `Ctrl+C` while the detail panel is open shows a confirmation dialog before closing.
+
+### Session management
+
+Press `Ctrl+N` to create a new session. A dialog lets you pick a target tmux session and choose whether to launch `claude` or `codex`. The new window is created in the selected tmux session and the pane list refreshes automatically.
 
 ### Git operations
 
