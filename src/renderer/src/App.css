@@ -996,10 +996,10 @@
 /* ── Slash command menu ── */
 .slash-menu {
   position: absolute;
-  bottom: 100%;
+  bottom: 0;
   left: 0;
   right: 0;
-  max-height: 150px;
+  max-height: 120px;
   overflow-y: auto;
   background: var(--bg-surface);
   border: 1px solid var(--border);
@@ -1008,7 +1008,6 @@
   z-index: 50;
   display: flex;
   flex-direction: column;
-  margin-bottom: 2px;
 }
 
 .slash-item {
@@ -1320,6 +1319,23 @@
   padding-left: 8px;
   margin-left: -10px;
   padding-right: 2px;
+}
+
+.streaming-badge {
+  font-size: 8px;
+  font-weight: 800;
+  color: var(--red);
+  background: rgba(239, 68, 68, 0.15);
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: 6px;
+  letter-spacing: 1px;
+  animation: pulse-live 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 /* Create session dialog */

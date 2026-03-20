@@ -90,6 +90,7 @@ function App(): React.JSX.Element {
   const [editingGitKey, setEditingGitKey] = useState(false)
   const [editingFocusKey, setEditingFocusKey] = useState(false)
   const [paneContent, setPaneContent] = useState<string | null>(null)
+  const [streaming, setStreaming] = useState(false)
   const [paneDetail, setPaneDetail] = useState<PaneDetail | null>(null)
   const [commitMsg, setCommitMsg] = useState('')
   const [gitResult, setGitResult] = useState<{ message: string; ok: boolean } | null>(null)
@@ -252,6 +253,25 @@ function App(): React.JSX.Element {
     })
   }, [])
 
+  // Stream data → update pane preview in real-time
+  const isAtBottomRef = useRef(true)
+  const streamActiveRef = useRef(false)
+  useEffect(() => {
+    return window.api.onStreamData((content) => {
+      if (!streamActiveRef.current) return
+      const el = paneViewerRef.current
+      if (el) {
+        isAtBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 30
+      }
+      setPaneContent(content)
+      if (isAtBottomRef.current) {
+        requestAnimationFrame(() => {
+          paneViewerRef.current?.scrollTo(0, paneViewerRef.current.scrollHeight)
+        })
+      }
+    })
+  }, [])
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('theme', theme)
@@ -392,19 +412,26 @@ function App(): React.JSX.Element {
         window.api.toggleCompact()
       }
 
-      // Ctrl+[previewKey] → show pane content popup
+      // Ctrl+[previewKey] → 1st: static preview, 2nd: start real-time streaming
       if (e.ctrlKey && e.key === previewKey && !e.metaKey) {
         e.preventDefault()
         if (selected) {
-          window.api.capturePane(selected).then((content) => {
-            setPaneContent(content)
-            // Double rAF: first for React render, second for layout
-            requestAnimationFrame(() => {
+          if (paneContent === null) {
+            // First press: open static preview
+            window.api.capturePane(selected).then((content) => {
+              setPaneContent(content)
               requestAnimationFrame(() => {
-                paneViewerRef.current?.scrollTo(0, paneViewerRef.current.scrollHeight)
+                requestAnimationFrame(() => {
+                  paneViewerRef.current?.scrollTo(0, paneViewerRef.current.scrollHeight)
+                })
               })
             })
-          })
+          } else if (!streaming) {
+            // Second press: switch to real-time mode
+            setStreaming(true)
+            streamActiveRef.current = true
+            window.api.startStream(selected)
+          }
         }
       }
 
@@ -482,8 +509,7 @@ function App(): React.JSX.Element {
         }
         if (paneContent !== null) {
           e.preventDefault()
-          setPaneContent(null)
-          requestAnimationFrame(() => textareaRef.current?.focus())
+          closePreview()
         } else if (paneDetail !== null) {
           e.preventDefault()
           setPaneDetail(null)
@@ -499,9 +525,18 @@ function App(): React.JSX.Element {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown)
   }, [selected, panes, choiceModifier, vimMode, compactKey, previewKey, detailKey, gitKey, paneContent, paneDetail, gitPopup, createDialog, confirmKill])
 
+  const closePreview = useCallback(() => {
+    streamActiveRef.current = false
+    setPaneContent(null)
+    setStreaming(false)
+    window.api.stopStream()
+    requestAnimationFrame(() => textareaRef.current?.focus())
+  }, [])
+
   const applySlashCommand = useCallback(
-    (cmd: SlashCommand) => {
-      setText(cmd.body)
+    (cmd: SlashCommand | SkillCommand) => {
+      const isSkill = 'source' in cmd
+      setText(isSkill ? `/${cmd.name}` : cmd.body)
       setSlashFilter(null)
       setSlashIndex(0)
       requestAnimationFrame(() => textareaRef.current?.focus())
@@ -1165,7 +1200,7 @@ function App(): React.JSX.Element {
           className="pane-overlay"
           tabIndex={-1}
           ref={(el) => el?.focus()}
-          onClick={() => { setPaneContent(null); requestAnimationFrame(() => textareaRef.current?.focus()) }}
+          onClick={() => closePreview()}
           onKeyDown={(e) => {
             const el = paneViewerRef.current
             if (!el) return
@@ -1192,8 +1227,7 @@ function App(): React.JSX.Element {
                 break
               case 'Escape':
               case 'q':
-                setPaneContent(null)
-                requestAnimationFrame(() => textareaRef.current?.focus())
+                closePreview()
                 break
               default:
                 return
@@ -1203,13 +1237,23 @@ function App(): React.JSX.Element {
         >
           <div className="pane-popup" onClick={(e) => e.stopPropagation()}>
             <div className="pane-popup-header">
-              <span className="pane-popup-title">{selected}</span>
-              <span className="pane-popup-hint">j/k d/u g/G q</span>
-              <button className="pane-popup-close" onClick={() => { setPaneContent(null); requestAnimationFrame(() => textareaRef.current?.focus()) }}>
+              <span className="pane-popup-title">{selected}{streaming && <span className="streaming-badge"> LIVE</span>}</span>
+              <span className="pane-popup-hint">{!streaming && `Ctrl+${previewKey.toUpperCase()} live `}j/k d/u g/G q</span>
+              <button className="pane-popup-close" onClick={() => closePreview()}>
                 Esc
               </button>
             </div>
-            <pre ref={paneViewerRef} className="pane-popup-content">
+            <pre
+              ref={paneViewerRef}
+              className="pane-popup-content"
+              onCopy={(e) => {
+                // Override copy to always produce plain text, avoiding
+                // rich-text formatting (bold) when pasting into Notion etc.
+                const text = window.getSelection()?.toString() ?? ''
+                e.clipboardData.setData('text/plain', text)
+                e.preventDefault()
+              }}
+            >
               {(() => {
                 if (!paneContent) return null
                 // Find the last Claude response (starts with ⏺)
