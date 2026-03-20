@@ -65,10 +65,16 @@ When `claude` or `codex` presents numbered choices (e.g. "1. Yes / 2. No"), clic
 | `Cmd+↓` | Switch to next pane |
 | `Ctrl+1-9` | Send numbered choice directly (modifier key configurable) |
 | `Ctrl+H` / `Ctrl+L` | Switch to previous / next pane |
+| `Ctrl+Cmd+H` / `Ctrl+Cmd+L` | Jump to previous / next session |
 | `Ctrl+P` | Open pane content preview / toggle live streaming (key configurable) |
+| `Ctrl+N` | Create a new session (select target tmux session and command) |
 | `Ctrl+D` | Open session detail popup (key configurable) |
+| `Ctrl+C` | Close session with confirmation (when detail panel is open) |
 | `Ctrl+G` | Open git operations popup (key configurable) |
 | `Ctrl+W` | Toggle compact mode — shrinks window to tab bar only (key configurable) |
+| `Ctrl+N` | Create a new session (select target tmux session and command) |
+| `/` | Open slash command autocomplete (when at start of input) |
+| `Ctrl+C` | Close session with confirmation (when detail panel is open) |
 | `↑` / `↓` | Navigate input history |
 | `Cmd+Shift+H` | Focus huge-mouse from any app (key configurable) |
 | `Escape` | Close popup / refocus textarea |
@@ -79,11 +85,19 @@ The pane preview (`Ctrl+P`) opens scrolled to the bottom and highlights Claude's
 
 ### Session detail
 
-Press `Ctrl+D` to view details of the selected pane: target, command, model, session ID, PID, CWD, and git branch/status.
+Press `Ctrl+D` to view details of the selected pane: target, command, model, session ID, PID, CWD, and git branch/status. The detail panel also has a **Close Session** button to terminate the pane. Pressing `Ctrl+C` while the detail panel is open shows a confirmation dialog before closing.
+
+### Session management
+
+Press `Ctrl+N` to create a new session. A dialog lets you pick a target tmux session and choose whether to launch `claude` or `codex`. The new window is created in the selected tmux session and the pane list refreshes automatically.
 
 ### Git operations
 
 Press `Ctrl+G` to open git operations for the selected pane's working directory. You can **Add All**, **Commit** (with a message), and **Push** directly from the popup. Shortcuts within the popup: `Ctrl+A` (add all), `Ctrl+P` (push).
+
+### Slash commands
+
+Save reusable text snippets as slash commands (e.g., `/fix`, `/review`). Type `/` at the start of the textarea to see a filterable autocomplete list. Select a command with `Enter`, `Tab`, or click to insert its body. Manage commands in the **Slash Commands** section of the sidebar.
 
 ### Settings
 
@@ -101,6 +115,7 @@ Click the gear icon to access settings:
 - **Detail Key** — change the key for session detail popup (`Ctrl+<key>`)
 - **Git Key** — change the key for git operations popup (`Ctrl+<key>`)
 - **Focus Key** — change the global shortcut to focus huge-mouse (`Cmd+Shift+<key>`)
+- **Slash Commands** — add, edit, and delete reusable slash commands
 
 ## License
 

@@ -1,6 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
 
+interface SlashCommand {
+  name: string
+  body: string
+}
+
+interface SkillCommand {
+  name: string
+  body: string
+  source: 'skill-user' | 'skill-project'
+}
+
 interface TmuxChoice {
   number: string
   label: string
@@ -83,14 +94,131 @@ function App(): React.JSX.Element {
   const [commitMsg, setCommitMsg] = useState('')
   const [gitResult, setGitResult] = useState<{ message: string; ok: boolean } | null>(null)
   const [gitPopup, setGitPopup] = useState<PaneDetail | null>(null)
-  const [streaming, setStreaming] = useState(false)
+  const [createDialog, setCreateDialog] = useState(false)
+  const [tmuxSessions, setTmuxSessions] = useState<string[]>([])
+  const [newSessionTarget, setNewSessionTarget] = useState('')
+  const [newSessionCommand, setNewSessionCommand] = useState<'claude' | 'codex'>('claude')
+  const [confirmKill, setConfirmKill] = useState(false)
   const detailContentRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const paneViewerRef = useRef<HTMLPreElement>(null)
-  const streamAutoScroll = useRef(true)
   const [history, setHistory] = useState<string[]>([])
   const historyIndex = useRef(-1)
   const savedDraft = useRef('')
+  const [slashCommands, setSlashCommands] = useState<SlashCommand[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('slashCommands') ?? '[]')
+    } catch {
+      return []
+    }
+  })
+  const [slashFilter, setSlashFilter] = useState<string | null>(null)
+  const [slashIndex, setSlashIndex] = useState(0)
+  const [editingSlash, setEditingSlash] = useState<SlashCommand | null>(null)
+  const [newSlashName, setNewSlashName] = useState('')
+  const [newSlashBody, setNewSlashBody] = useState('')
+  const [slashManagerOpen, setSlashManagerOpen] = useState(false)
+  const [skillCommands, setSkillCommands] = useState<SkillCommand[]>([])
+  // cwd of the currently selected pane — used to scope project-level skills
+  const [selectedCwd, setSelectedCwd] = useState('')
+  // in-memory cache of project skills per cwd: { skills, time }
+  const projectSkillCache = useRef<Map<string, { skills: SkillCommand[]; time: number }>>(new Map())
+
+  // All commands available for autocomplete: user-created commands, then skills
+  // User-created commands take priority if names collide
+  const allCommands = [
+    ...slashCommands,
+    ...skillCommands.filter((sk) => !slashCommands.some((uc) => uc.name === sk.name))
+  ]
+
+  const filteredSlash =
+    slashFilter !== null
+      ? allCommands.filter((c) => c.name.toLowerCase().startsWith(slashFilter.toLowerCase()))
+      : []
+
+  const saveSlashCommands = useCallback((cmds: SlashCommand[]) => {
+    setSlashCommands(cmds)
+    localStorage.setItem('slashCommands', JSON.stringify(cmds))
+  }, [])
+
+  const loadUserSkills = useCallback(async (force = false) => {
+    const USER_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+    const cachedTime = Number(localStorage.getItem('userSkillsCacheTime') ?? '0')
+    const now = Date.now()
+    if (!force && now - cachedTime < USER_CACHE_TTL) {
+      try {
+        const cached = JSON.parse(localStorage.getItem('userSkillsCache') ?? '[]') as SkillCommand[]
+        if (cached.length > 0) {
+          setSkillCommands((prev) => {
+            const projectSkills = prev.filter((s) => s.source === 'skill-project')
+            return [...cached, ...projectSkills]
+          })
+          return
+        }
+      } catch {
+        // Fall through to re-fetch
+      }
+    }
+    const result = await window.api.listSkills('')
+    const userSkills: SkillCommand[] = result.user.map((s) => ({
+      name: s.name,
+      body: s.description || s.name,
+      source: 'skill-user'
+    }))
+    localStorage.setItem('userSkillsCache', JSON.stringify(userSkills))
+    localStorage.setItem('userSkillsCacheTime', String(now))
+    setSkillCommands((prev) => {
+      const projectSkills = prev.filter((s) => s.source === 'skill-project')
+      return [...userSkills, ...projectSkills]
+    })
+  }, [])
+
+  const loadProjectSkills = useCallback(async (cwd: string, force = false) => {
+    if (!cwd) return
+    const PROJECT_CACHE_TTL = 30 * 1000 // 30 seconds
+    const cached = projectSkillCache.current.get(cwd)
+    if (!force && cached && Date.now() - cached.time < PROJECT_CACHE_TTL) {
+      setSkillCommands((prev) => {
+        const userSkills = prev.filter((s) => s.source === 'skill-user')
+        return [...userSkills, ...cached.skills]
+      })
+      return
+    }
+    const result = await window.api.listSkills(cwd)
+    const projectSkills: SkillCommand[] = result.project.map((s) => ({
+      name: s.name,
+      body: s.description || s.name,
+      source: 'skill-project'
+    }))
+    projectSkillCache.current.set(cwd, { skills: projectSkills, time: Date.now() })
+    setSkillCommands((prev) => {
+      const userSkills = prev.filter((s) => s.source === 'skill-user')
+      return [...userSkills, ...projectSkills]
+    })
+  }, [])
+
+  // Load user-level skills on mount, refresh every 5 minutes
+  useEffect(() => {
+    loadUserSkills()
+    const id = setInterval(() => loadUserSkills(true), 5 * 60 * 1000)
+    return () => clearInterval(id)
+  }, [loadUserSkills])
+
+  // Load project-level skills when selected pane cwd changes, refresh every 30s
+  useEffect(() => {
+    if (!selected) return
+    window.api.getPaneDetail(selected).then((detail) => {
+      if (!detail?.cwd) return
+      setSelectedCwd(detail.cwd)
+      loadProjectSkills(detail.cwd)
+    })
+  }, [selected, loadProjectSkills])
+
+  useEffect(() => {
+    if (!selectedCwd) return
+    const id = setInterval(() => loadProjectSkills(selectedCwd, true), 30 * 1000)
+    return () => clearInterval(id)
+  }, [selectedCwd, loadProjectSkills])
 
   useEffect(() => {
     window.api.getAlwaysOnTop().then(setAlwaysOnTop)
@@ -123,19 +251,6 @@ function App(): React.JSX.Element {
       requestAnimationFrame(() => textareaRef.current?.focus())
     })
   }, [])
-
-  // Stream data listener: update paneContent when streaming
-  useEffect(() => {
-    if (!streaming) return
-    return window.api.onStreamData((content) => {
-      setPaneContent(content)
-      if (streamAutoScroll.current) {
-        requestAnimationFrame(() => {
-          paneViewerRef.current?.scrollTo(0, paneViewerRef.current.scrollHeight)
-        })
-      }
-    })
-  }, [streaming])
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -200,11 +315,36 @@ function App(): React.JSX.Element {
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent): void => {
-      const isPrevPane =
-        (e.metaKey && e.key === 'ArrowUp') || (e.ctrlKey && e.key === 'h' && !e.metaKey)
-      const isNextPane =
-        (e.metaKey && e.key === 'ArrowDown') || (e.ctrlKey && e.key === 'l' && !e.metaKey)
-      if (isPrevPane) {
+      const isPrevPane = (e.metaKey && e.key === 'ArrowUp') || (e.ctrlKey && e.key === 'h' && !e.metaKey)
+      const isNextPane = (e.metaKey && e.key === 'ArrowDown') || (e.ctrlKey && e.key === 'l' && !e.metaKey)
+      // Ctrl+Cmd+H/L → jump across session boundaries
+      const isPrevSession = e.ctrlKey && e.metaKey && e.key === 'h'
+      const isNextSession = e.ctrlKey && e.metaKey && e.key === 'l'
+      if (isPrevSession || isNextSession) {
+        e.preventDefault()
+        setPanes((prev) => {
+          if (prev.length === 0) return prev
+          const sessionNames: string[] = []
+          const sessionFirstIdx: number[] = []
+          for (let i = 0; i < prev.length; i++) {
+            const sess = prev[i].target.split(':')[0]
+            if (sessionNames[sessionNames.length - 1] !== sess) {
+              sessionNames.push(sess)
+              sessionFirstIdx.push(i)
+            }
+          }
+          const currentSess = selected ? selected.split(':')[0] : ''
+          const currentSessionIdx = sessionNames.indexOf(currentSess)
+          let nextSessionIdx: number
+          if (isPrevSession) {
+            nextSessionIdx = currentSessionIdx > 0 ? currentSessionIdx - 1 : sessionNames.length - 1
+          } else {
+            nextSessionIdx = currentSessionIdx < sessionNames.length - 1 ? currentSessionIdx + 1 : 0
+          }
+          setSelected(prev[sessionFirstIdx[nextSessionIdx]].target)
+          return prev
+        })
+      } else if (isPrevPane) {
         e.preventDefault()
         setPanes((prev) => {
           const idx = prev.findIndex((p) => p.target === selected)
@@ -252,32 +392,19 @@ function App(): React.JSX.Element {
         window.api.toggleCompact()
       }
 
-      // Ctrl+[previewKey] → show pane content popup (static or streaming)
+      // Ctrl+[previewKey] → show pane content popup
       if (e.ctrlKey && e.key === previewKey && !e.metaKey) {
         e.preventDefault()
         if (selected) {
-          if (paneContent !== null && !streaming) {
-            // Already showing static preview → upgrade to streaming
-            setStreaming(true)
-            streamAutoScroll.current = true
-            window.api.startStream(selected)
-          } else if (streaming) {
-            // Already streaming → close
-            setStreaming(false)
-            window.api.stopStream()
-            setPaneContent(null)
-            requestAnimationFrame(() => textareaRef.current?.focus())
-          } else {
-            // Not showing → open static preview
-            window.api.capturePane(selected).then((content) => {
-              setPaneContent(content)
+          window.api.capturePane(selected).then((content) => {
+            setPaneContent(content)
+            // Double rAF: first for React render, second for layout
+            requestAnimationFrame(() => {
               requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                  paneViewerRef.current?.scrollTo(0, paneViewerRef.current.scrollHeight)
-                })
+                paneViewerRef.current?.scrollTo(0, paneViewerRef.current.scrollHeight)
               })
             })
-          }
+          })
         }
       }
 
@@ -308,11 +435,7 @@ function App(): React.JSX.Element {
         if (e.key === 'a') {
           e.preventDefault()
           window.api.gitAdd(gitPopup.cwd).then(async (r) => {
-            setGitResult(
-              r.success
-                ? { message: 'Staged all', ok: true }
-                : { message: r.error ?? 'Failed', ok: false }
-            )
+            setGitResult(r.success ? { message: 'Staged all', ok: true } : { message: r.error ?? 'Failed', ok: false })
             const refreshed = await window.api.getPaneDetail(gitPopup.target)
             if (refreshed) setGitPopup(refreshed)
             setTimeout(() => setGitResult(null), 2000)
@@ -321,24 +444,44 @@ function App(): React.JSX.Element {
         if (e.key === 'p') {
           e.preventDefault()
           window.api.gitPush(gitPopup.cwd).then((r) => {
-            setGitResult(
-              r.success
-                ? { message: 'Pushed', ok: true }
-                : { message: r.error ?? 'Failed', ok: false }
-            )
+            setGitResult(r.success ? { message: 'Pushed', ok: true } : { message: r.error ?? 'Failed', ok: false })
             setTimeout(() => setGitResult(null), 2000)
           })
         }
       }
 
+      // Ctrl+N → open create session dialog
+      if (e.ctrlKey && e.key === 'n' && !e.metaKey) {
+        e.preventDefault()
+        window.api.listTmuxSessions().then((sessions) => {
+          setTmuxSessions(sessions)
+          setNewSessionTarget(sessions[0] ?? '')
+          setNewSessionCommand('claude')
+          setCreateDialog(true)
+        })
+      }
+
+      // Ctrl+C → confirm kill when detail panel is open
+      if (e.ctrlKey && e.key === 'c' && !e.metaKey && paneDetail !== null) {
+        e.preventDefault()
+        setConfirmKill(true)
+      }
+
       // Escape → close popups and refocus textarea
       if (e.key === 'Escape') {
+        if (confirmKill) {
+          e.preventDefault()
+          setConfirmKill(false)
+          return
+        }
+        if (createDialog) {
+          e.preventDefault()
+          setCreateDialog(false)
+          requestAnimationFrame(() => textareaRef.current?.focus())
+          return
+        }
         if (paneContent !== null) {
           e.preventDefault()
-          if (streaming) {
-            setStreaming(false)
-            window.api.stopStream()
-          }
           setPaneContent(null)
           requestAnimationFrame(() => textareaRef.current?.focus())
         } else if (paneDetail !== null) {
@@ -354,26 +497,65 @@ function App(): React.JSX.Element {
     }
     window.addEventListener('keydown', handleGlobalKeyDown)
     return () => window.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [
-    selected,
-    panes,
-    choiceModifier,
-    vimMode,
-    compactKey,
-    previewKey,
-    detailKey,
-    gitKey,
-    paneContent,
-    paneDetail,
-    gitPopup,
-    streaming
-  ])
+  }, [selected, panes, choiceModifier, vimMode, compactKey, previewKey, detailKey, gitKey, paneContent, paneDetail, gitPopup, createDialog, confirmKill])
+
+  const applySlashCommand = useCallback(
+    (cmd: SlashCommand) => {
+      setText(cmd.body)
+      setSlashFilter(null)
+      setSlashIndex(0)
+      requestAnimationFrame(() => textareaRef.current?.focus())
+    },
+    []
+  )
+
+  const handleTextChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const val = e.target.value
+      setText(val)
+      // Detect slash command trigger: starts with / and no spaces yet
+      const match = val.match(/^\/(\S*)$/)
+      if (match && allCommands.length > 0) {
+        setSlashFilter(match[1])
+        setSlashIndex(0)
+      } else {
+        setSlashFilter(null)
+      }
+    },
+    [allCommands]
+  )
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.nativeEvent.isComposing) return
+
+      // Slash command menu navigation
+      if (slashFilter !== null && filteredSlash.length > 0) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault()
+          setSlashIndex((i) => (i + 1) % filteredSlash.length)
+          return
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault()
+          setSlashIndex((i) => (i - 1 + filteredSlash.length) % filteredSlash.length)
+          return
+        }
+        if (e.key === 'Enter' || e.key === 'Tab') {
+          e.preventDefault()
+          applySlashCommand(filteredSlash[slashIndex])
+          return
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          setSlashFilter(null)
+          return
+        }
+      }
+
       if (e.key === 'Enter') {
-        const isSend = sendKey === 'cmd+enter' ? e.metaKey : !e.metaKey && !e.shiftKey
+        const isSend =
+          sendKey === 'cmd+enter' ? e.metaKey : !e.metaKey && !e.shiftKey
         if (isSend) {
           e.preventDefault()
           send()
@@ -408,7 +590,8 @@ function App(): React.JSX.Element {
       }
       if (e.key === 'ArrowDown' && !e.metaKey && historyIndex.current >= 0) {
         const ta = e.currentTarget as HTMLTextAreaElement
-        const isAtBottom = !ta.value.includes('\n') || ta.selectionStart === ta.value.length
+        const isAtBottom =
+          !ta.value.includes('\n') || ta.selectionStart === ta.value.length
         if (isAtBottom) {
           e.preventDefault()
           if (historyIndex.current < history.length - 1) {
@@ -421,7 +604,7 @@ function App(): React.JSX.Element {
         }
       }
     },
-    [send, sendKey, history, text]
+    [send, sendKey, history, text, slashFilter, filteredSlash, slashIndex, applySlashCommand]
   )
 
   const toggleAlwaysOnTop = async (): Promise<void> => {
@@ -461,9 +644,7 @@ function App(): React.JSX.Element {
                     }}
                   >
                     <span className={`dot dot-${p.status}`} />
-                    <span className={`cmd-badge cmd-badge-${p.command}`}>
-                      {p.command === 'codex' ? 'CX' : 'CC'}
-                    </span>
+                    <span className={`cmd-badge cmd-badge-${p.command}`}>{p.command === 'codex' ? 'CX' : 'CC'}</span>
                     {p.target.split(':')[1]}
                   </button>
                   {p.choices.length > 0 && (
@@ -477,8 +658,7 @@ function App(): React.JSX.Element {
                           onKeyDown={(e) => {
                             if (e.key === 'Tab' && !e.shiftKey) {
                               e.preventDefault()
-                              const next = e.currentTarget
-                                .nextElementSibling as HTMLButtonElement | null
+                              const next = e.currentTarget.nextElementSibling as HTMLButtonElement | null
                               if (next) {
                                 next.focus()
                               } else {
@@ -489,14 +669,11 @@ function App(): React.JSX.Element {
                             }
                             if (e.key === 'Tab' && e.shiftKey) {
                               e.preventDefault()
-                              const prev = e.currentTarget
-                                .previousElementSibling as HTMLButtonElement | null
+                              const prev = e.currentTarget.previousElementSibling as HTMLButtonElement | null
                               if (prev) {
                                 prev.focus()
                               } else {
-                                const tag = e.currentTarget
-                                  .closest('.tag-row')
-                                  ?.querySelector<HTMLButtonElement>('.tag')
+                                const tag = e.currentTarget.closest('.tag-row')?.querySelector<HTMLButtonElement>('.tag')
                                 tag?.focus()
                               }
                             }
@@ -522,335 +699,473 @@ function App(): React.JSX.Element {
         </button>
       </div>
 
-      {!compact && (
-        <div className="main-area">
-          <div className="content">
-            {selectedPane?.prompt && (
-              <div className="prompt-box">
-                <pre className="prompt-text">{selectedPane.prompt}</pre>
-                {selectedPane.choices.length > 0 && (
-                  <div className="prompt-choices">
-                    {selectedPane.choices.map((c) => (
-                      <button
-                        key={c.number}
-                        className="prompt-choice-btn"
-                        onClick={async () => {
-                          await window.api.sendInput(selectedPane.target, c.number, vimMode)
-                          setStatus({
-                            message: `Sent ${c.number} → ${selectedPane.target}`,
-                            ok: true
-                          })
-                          setTimeout(() => setStatus(null), 2000)
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Tab' && !e.shiftKey) {
-                            const next = e.currentTarget
-                              .nextElementSibling as HTMLButtonElement | null
-                            if (!next) {
-                              e.preventDefault()
-                              document.querySelector<HTMLTextAreaElement>('.textarea')?.focus()
-                            }
+      {!compact && <div className="main-area">
+        <div className="content">
+          {selectedPane?.prompt && (
+            <div className="prompt-box">
+              <pre className="prompt-text">{selectedPane.prompt}</pre>
+              {selectedPane.choices.length > 0 && (
+                <div className="prompt-choices">
+                  {selectedPane.choices.map((c) => (
+                    <button
+                      key={c.number}
+                      className="prompt-choice-btn"
+                      onClick={async () => {
+                        await window.api.sendInput(selectedPane.target, c.number, vimMode)
+                        setStatus({
+                          message: `Sent ${c.number} → ${selectedPane.target}`,
+                          ok: true
+                        })
+                        setTimeout(() => setStatus(null), 2000)
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Tab' && !e.shiftKey) {
+                          const next = e.currentTarget.nextElementSibling as HTMLButtonElement | null
+                          if (!next) {
+                            e.preventDefault()
+                            document.querySelector<HTMLTextAreaElement>('.textarea')?.focus()
                           }
-                        }}
-                      >
-                        {c.number}. {c.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+                        }
+                      }}
+                    >
+                      {c.number}. {c.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
+          <div className="textarea-wrapper">
             <textarea
               ref={textareaRef}
               className="textarea"
               rows={5}
               placeholder={`Type input to send... (${sendKey === 'cmd+enter' ? 'Cmd+Enter' : 'Enter'} to send)`}
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={handleTextChange}
               onKeyDown={handleKeyDown}
             />
-
-            <div className="footer">
-              {status && (
-                <span className={status.ok ? 'status-ok' : 'status-err'}>{status.message}</span>
-              )}
-              <button className="send-btn" onClick={send} disabled={!selected || !text.trim()}>
-                Send
-              </button>
-            </div>
+            {slashFilter !== null && filteredSlash.length > 0 && (
+              <div className="slash-menu">
+                {filteredSlash.map((cmd, i) => (
+                  <button
+                    key={cmd.name}
+                    className={`slash-item ${i === slashIndex ? 'slash-item-active' : ''}`}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      applySlashCommand(cmd)
+                    }}
+                  >
+                    <span className="slash-item-name">/{cmd.name}</span>
+                    <span className="slash-item-body">{cmd.body.length > 40 ? cmd.body.slice(0, 40) + '...' : cmd.body}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
-            <div className="sidebar-title">Settings</div>
-            <label className="setting-row">
-              <span className="setting-label">Always on Top</span>
-              <button
-                className={`toggle ${alwaysOnTop ? 'toggle-on' : ''}`}
-                onClick={toggleAlwaysOnTop}
-              >
-                <span className="toggle-knob" />
-              </button>
-            </label>
-            <label className="setting-row">
-              <span className="setting-label">Opacity</span>
-              <input
-                type="range"
-                className="opacity-slider"
-                min="0.5"
-                max="1"
-                step="0.05"
-                value={opacity}
-                onChange={(e) => {
-                  const v = Number(e.target.value)
-                  setOpacity(v)
-                  localStorage.setItem('opacity', String(v))
-                  window.api.setOpacity(v)
-                }}
-              />
-            </label>
-            <label className="setting-row">
-              <span className="setting-label">Font Size</span>
-              <input
-                type="range"
-                className="opacity-slider"
-                min="8"
-                max="18"
-                step="1"
-                value={fontSize}
-                onChange={(e) => {
-                  const v = Number(e.target.value)
-                  setFontSize(v)
-                  localStorage.setItem('fontSize', String(v))
-                }}
-              />
-            </label>
-            <div
-              className="setting-row"
-              style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}
-            >
-              <span className="setting-label">Theme</span>
-              <div className="theme-segment">
-                <button
-                  className={`theme-btn ${theme === 'dark' ? 'theme-btn-active' : ''}`}
-                  onClick={() => setTheme('dark')}
-                >
-                  Dark
-                </button>
-                <button
-                  className={`theme-btn ${theme === 'light' ? 'theme-btn-active' : ''}`}
-                  onClick={() => setTheme('light')}
-                >
-                  Light
-                </button>
-              </div>
-            </div>
-            <div
-              className="setting-row"
-              style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}
-            >
-              <span className="setting-label">Choice Key</span>
-              <div className="theme-segment">
-                <button
-                  className={`theme-btn ${choiceModifier === 'ctrl' ? 'theme-btn-active' : ''}`}
-                  onClick={() => setChoiceModifier('ctrl')}
-                >
-                  Ctrl
-                </button>
-                <button
-                  className={`theme-btn ${choiceModifier === 'cmd' ? 'theme-btn-active' : ''}`}
-                  onClick={() => setChoiceModifier('cmd')}
-                >
-                  Cmd
-                </button>
-              </div>
-            </div>
-            <div
-              className="setting-row"
-              style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}
-            >
-              <span className="setting-label">Send Key</span>
-              <div className="theme-segment">
-                <button
-                  className={`theme-btn ${sendKey === 'cmd+enter' ? 'theme-btn-active' : ''}`}
-                  onClick={() => {
-                    setSendKey('cmd+enter')
-                    localStorage.setItem('sendKey', 'cmd+enter')
-                  }}
-                >
-                  ⌘↵
-                </button>
-                <button
-                  className={`theme-btn ${sendKey === 'enter' ? 'theme-btn-active' : ''}`}
-                  onClick={() => {
-                    setSendKey('enter')
-                    localStorage.setItem('sendKey', 'enter')
-                  }}
-                >
-                  ↵
-                </button>
-              </div>
-            </div>
-            <label className="setting-row">
-              <span className="setting-label">Vim Mode</span>
-              <button
-                className={`toggle ${vimMode ? 'toggle-on' : ''}`}
-                onClick={() => {
-                  const next = !vimMode
-                  setVimMode(next)
-                  localStorage.setItem('vimMode', String(next))
-                }}
-              >
-                <span className="toggle-knob" />
-              </button>
-            </label>
-            <label className="setting-row">
-              <span className="setting-label">Compact Key</span>
-              {editingCompactKey ? (
-                <span
-                  className="key-capture"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    e.preventDefault()
-                    if (e.key.length === 1 && !e.metaKey && !e.ctrlKey) {
-                      setCompactKey(e.key.toLowerCase())
-                      setEditingCompactKey(false)
-                    }
-                    if (e.key === 'Escape') {
-                      setEditingCompactKey(false)
-                    }
-                  }}
-                  ref={(el) => el?.focus()}
-                >
-                  Press a key...
-                </span>
-              ) : (
-                <button className="key-display" onClick={() => setEditingCompactKey(true)}>
-                  Ctrl+{compactKey.toUpperCase()}
-                </button>
-              )}
-            </label>
-            <label className="setting-row">
-              <span className="setting-label">Preview Key</span>
-              {editingPreviewKey ? (
-                <span
-                  className="key-capture"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    e.preventDefault()
-                    if (e.key.length === 1 && !e.metaKey && !e.ctrlKey) {
-                      setPreviewKey(e.key.toLowerCase())
-                      setEditingPreviewKey(false)
-                    }
-                    if (e.key === 'Escape') {
-                      setEditingPreviewKey(false)
-                    }
-                  }}
-                  ref={(el) => el?.focus()}
-                >
-                  Press a key...
-                </span>
-              ) : (
-                <button className="key-display" onClick={() => setEditingPreviewKey(true)}>
-                  Ctrl+{previewKey.toUpperCase()}
-                </button>
-              )}
-            </label>
-            <label className="setting-row">
-              <span className="setting-label">Detail Key</span>
-              {editingDetailKey ? (
-                <span
-                  className="key-capture"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    e.preventDefault()
-                    if (e.key.length === 1 && !e.metaKey && !e.ctrlKey) {
-                      setDetailKey(e.key.toLowerCase())
-                      setEditingDetailKey(false)
-                    }
-                    if (e.key === 'Escape') {
-                      setEditingDetailKey(false)
-                    }
-                  }}
-                  ref={(el) => el?.focus()}
-                >
-                  Press a key...
-                </span>
-              ) : (
-                <button className="key-display" onClick={() => setEditingDetailKey(true)}>
-                  Ctrl+{detailKey.toUpperCase()}
-                </button>
-              )}
-            </label>
-            <label className="setting-row">
-              <span className="setting-label">Git Key</span>
-              {editingGitKey ? (
-                <span
-                  className="key-capture"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    e.preventDefault()
-                    if (e.key.length === 1 && !e.metaKey && !e.ctrlKey) {
-                      setGitKey(e.key.toLowerCase())
-                      setEditingGitKey(false)
-                    }
-                    if (e.key === 'Escape') {
-                      setEditingGitKey(false)
-                    }
-                  }}
-                  ref={(el) => el?.focus()}
-                >
-                  Press a key...
-                </span>
-              ) : (
-                <button className="key-display" onClick={() => setEditingGitKey(true)}>
-                  Ctrl+{gitKey.toUpperCase()}
-                </button>
-              )}
-            </label>
-            <label className="setting-row">
-              <span className="setting-label">Focus Key</span>
-              {editingFocusKey ? (
-                <span
-                  className="key-capture"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    e.preventDefault()
-                    if (e.key.length === 1 && !e.metaKey && !e.ctrlKey) {
-                      setFocusKey(e.key.toLowerCase())
-                      setEditingFocusKey(false)
-                    }
-                    if (e.key === 'Escape') {
-                      setEditingFocusKey(false)
-                    }
-                  }}
-                  ref={(el) => el?.focus()}
-                >
-                  Press a key...
-                </span>
-              ) : (
-                <button className="key-display" onClick={() => setEditingFocusKey(true)}>
-                  ⌘⇧{focusKey.toUpperCase()}
-                </button>
-              )}
-            </label>
+          <div className="footer">
+            {status && (
+              <span className={status.ok ? 'status-ok' : 'status-err'}>{status.message}</span>
+            )}
+            <button className="send-btn" onClick={send} disabled={!selected || !text.trim()}>
+              Send
+            </button>
           </div>
         </div>
-      )}
+
+        <div className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
+          <div className="sidebar-title">Settings</div>
+          <label className="setting-row">
+            <span className="setting-label">Always on Top</span>
+            <button
+              className={`toggle ${alwaysOnTop ? 'toggle-on' : ''}`}
+              onClick={toggleAlwaysOnTop}
+            >
+              <span className="toggle-knob" />
+            </button>
+          </label>
+          <label className="setting-row">
+            <span className="setting-label">Opacity</span>
+            <input
+              type="range"
+              className="opacity-slider"
+              min="0.5"
+              max="1"
+              step="0.05"
+              value={opacity}
+              onChange={(e) => {
+                const v = Number(e.target.value)
+                setOpacity(v)
+                localStorage.setItem('opacity', String(v))
+                window.api.setOpacity(v)
+              }}
+            />
+          </label>
+          <label className="setting-row">
+            <span className="setting-label">Font Size</span>
+            <input
+              type="range"
+              className="opacity-slider"
+              min="8"
+              max="18"
+              step="1"
+              value={fontSize}
+              onChange={(e) => {
+                const v = Number(e.target.value)
+                setFontSize(v)
+                localStorage.setItem('fontSize', String(v))
+              }}
+            />
+          </label>
+          <div
+            className="setting-row"
+            style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}
+          >
+            <span className="setting-label">Theme</span>
+            <div className="theme-segment">
+              <button
+                className={`theme-btn ${theme === 'dark' ? 'theme-btn-active' : ''}`}
+                onClick={() => setTheme('dark')}
+              >
+                Dark
+              </button>
+              <button
+                className={`theme-btn ${theme === 'light' ? 'theme-btn-active' : ''}`}
+                onClick={() => setTheme('light')}
+              >
+                Light
+              </button>
+            </div>
+          </div>
+          <div
+            className="setting-row"
+            style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}
+          >
+            <span className="setting-label">Choice Key</span>
+            <div className="theme-segment">
+              <button
+                className={`theme-btn ${choiceModifier === 'ctrl' ? 'theme-btn-active' : ''}`}
+                onClick={() => setChoiceModifier('ctrl')}
+              >
+                Ctrl
+              </button>
+              <button
+                className={`theme-btn ${choiceModifier === 'cmd' ? 'theme-btn-active' : ''}`}
+                onClick={() => setChoiceModifier('cmd')}
+              >
+                Cmd
+              </button>
+            </div>
+          </div>
+          <div
+            className="setting-row"
+            style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}
+          >
+            <span className="setting-label">Send Key</span>
+            <div className="theme-segment">
+              <button
+                className={`theme-btn ${sendKey === 'cmd+enter' ? 'theme-btn-active' : ''}`}
+                onClick={() => {
+                  setSendKey('cmd+enter')
+                  localStorage.setItem('sendKey', 'cmd+enter')
+                }}
+              >
+                ⌘↵
+              </button>
+              <button
+                className={`theme-btn ${sendKey === 'enter' ? 'theme-btn-active' : ''}`}
+                onClick={() => {
+                  setSendKey('enter')
+                  localStorage.setItem('sendKey', 'enter')
+                }}
+              >
+                ↵
+              </button>
+            </div>
+          </div>
+          <label className="setting-row">
+            <span className="setting-label">Vim Mode</span>
+            <button
+              className={`toggle ${vimMode ? 'toggle-on' : ''}`}
+              onClick={() => {
+                const next = !vimMode
+                setVimMode(next)
+                localStorage.setItem('vimMode', String(next))
+              }}
+            >
+              <span className="toggle-knob" />
+            </button>
+          </label>
+          <label className="setting-row">
+            <span className="setting-label">Compact Key</span>
+            {editingCompactKey ? (
+              <span
+                className="key-capture"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  e.preventDefault()
+                  if (e.key.length === 1 && !e.metaKey && !e.ctrlKey) {
+                    setCompactKey(e.key.toLowerCase())
+                    setEditingCompactKey(false)
+                  }
+                  if (e.key === 'Escape') {
+                    setEditingCompactKey(false)
+                  }
+                }}
+                ref={(el) => el?.focus()}
+              >
+                Press a key...
+              </span>
+            ) : (
+              <button className="key-display" onClick={() => setEditingCompactKey(true)}>
+                Ctrl+{compactKey.toUpperCase()}
+              </button>
+            )}
+          </label>
+          <label className="setting-row">
+            <span className="setting-label">Preview Key</span>
+            {editingPreviewKey ? (
+              <span
+                className="key-capture"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  e.preventDefault()
+                  if (e.key.length === 1 && !e.metaKey && !e.ctrlKey) {
+                    setPreviewKey(e.key.toLowerCase())
+                    setEditingPreviewKey(false)
+                  }
+                  if (e.key === 'Escape') {
+                    setEditingPreviewKey(false)
+                  }
+                }}
+                ref={(el) => el?.focus()}
+              >
+                Press a key...
+              </span>
+            ) : (
+              <button className="key-display" onClick={() => setEditingPreviewKey(true)}>
+                Ctrl+{previewKey.toUpperCase()}
+              </button>
+            )}
+          </label>
+          <label className="setting-row">
+            <span className="setting-label">Detail Key</span>
+            {editingDetailKey ? (
+              <span
+                className="key-capture"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  e.preventDefault()
+                  if (e.key.length === 1 && !e.metaKey && !e.ctrlKey) {
+                    setDetailKey(e.key.toLowerCase())
+                    setEditingDetailKey(false)
+                  }
+                  if (e.key === 'Escape') {
+                    setEditingDetailKey(false)
+                  }
+                }}
+                ref={(el) => el?.focus()}
+              >
+                Press a key...
+              </span>
+            ) : (
+              <button className="key-display" onClick={() => setEditingDetailKey(true)}>
+                Ctrl+{detailKey.toUpperCase()}
+              </button>
+            )}
+          </label>
+          <label className="setting-row">
+            <span className="setting-label">Git Key</span>
+            {editingGitKey ? (
+              <span
+                className="key-capture"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  e.preventDefault()
+                  if (e.key.length === 1 && !e.metaKey && !e.ctrlKey) {
+                    setGitKey(e.key.toLowerCase())
+                    setEditingGitKey(false)
+                  }
+                  if (e.key === 'Escape') {
+                    setEditingGitKey(false)
+                  }
+                }}
+                ref={(el) => el?.focus()}
+              >
+                Press a key...
+              </span>
+            ) : (
+              <button className="key-display" onClick={() => setEditingGitKey(true)}>
+                Ctrl+{gitKey.toUpperCase()}
+              </button>
+            )}
+          </label>
+          <label className="setting-row">
+            <span className="setting-label">Focus Key</span>
+            {editingFocusKey ? (
+              <span
+                className="key-capture"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  e.preventDefault()
+                  if (e.key.length === 1 && !e.metaKey && !e.ctrlKey) {
+                    setFocusKey(e.key.toLowerCase())
+                    setEditingFocusKey(false)
+                  }
+                  if (e.key === 'Escape') {
+                    setEditingFocusKey(false)
+                  }
+                }}
+                ref={(el) => el?.focus()}
+              >
+                Press a key...
+              </span>
+            ) : (
+              <button className="key-display" onClick={() => setEditingFocusKey(true)}>
+                ⌘⇧{focusKey.toUpperCase()}
+              </button>
+            )}
+          </label>
+
+          <div className="sidebar-divider" />
+          <div
+            className="setting-row"
+            style={{ cursor: 'pointer' }}
+            onClick={() => setSlashManagerOpen(!slashManagerOpen)}
+          >
+            <span className="setting-label">Slash Commands ({allCommands.length})</span>
+            <span className="slash-toggle-arrow">{slashManagerOpen ? '▾' : '▸'}</span>
+          </div>
+          {slashManagerOpen && (
+            <div className="slash-manager">
+              {skillCommands.length > 0 && (
+                <div className="slash-skill-section">
+                  <span className="slash-skill-label">Skills (read-only)</span>
+                  {skillCommands.map((cmd) => (
+                    <div key={`skill:${cmd.name}`} className="slash-entry slash-entry-skill">
+                      <span className="slash-entry-name">/{cmd.name}</span>
+                      <span className="slash-skill-source">
+                        {cmd.source === 'skill-user' ? 'user' : 'project'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {slashCommands.map((cmd) => (
+                <div key={cmd.name} className="slash-entry">
+                  {editingSlash?.name === cmd.name ? (
+                    <div className="slash-edit-form">
+                      <input
+                        className="slash-input"
+                        value={editingSlash.name}
+                        onChange={(e) =>
+                          setEditingSlash({ ...editingSlash, name: e.target.value })
+                        }
+                        onKeyDown={(e) => e.stopPropagation()}
+                        placeholder="name"
+                      />
+                      <textarea
+                        className="slash-body-input"
+                        value={editingSlash.body}
+                        onChange={(e) =>
+                          setEditingSlash({ ...editingSlash, body: e.target.value })
+                        }
+                        onKeyDown={(e) => e.stopPropagation()}
+                        placeholder="body"
+                        rows={2}
+                      />
+                      <div className="slash-edit-actions">
+                        <button
+                          className="slash-save-btn"
+                          onClick={() => {
+                            if (!editingSlash.name.trim() || !editingSlash.body.trim()) return
+                            saveSlashCommands(
+                              slashCommands.map((c) =>
+                                c.name === cmd.name
+                                  ? { name: editingSlash.name.trim(), body: editingSlash.body.trim() }
+                                  : c
+                              )
+                            )
+                            setEditingSlash(null)
+                          }}
+                        >
+                          Save
+                        </button>
+                        <button
+                          className="slash-cancel-btn"
+                          onClick={() => setEditingSlash(null)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="slash-entry-name">/{cmd.name}</span>
+                      <div className="slash-entry-actions">
+                        <button
+                          className="slash-action-btn"
+                          onClick={() => setEditingSlash({ ...cmd })}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="slash-action-btn slash-delete-btn"
+                          onClick={() =>
+                            saveSlashCommands(slashCommands.filter((c) => c.name !== cmd.name))
+                          }
+                        >
+                          Del
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+              <div className="slash-add-form">
+                <input
+                  className="slash-input"
+                  value={newSlashName}
+                  onChange={(e) => setNewSlashName(e.target.value)}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  placeholder="/name"
+                />
+                <textarea
+                  className="slash-body-input"
+                  value={newSlashBody}
+                  onChange={(e) => setNewSlashBody(e.target.value)}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  placeholder="Command body..."
+                  rows={2}
+                />
+                <button
+                  className="slash-save-btn"
+                  disabled={!newSlashName.trim() || !newSlashBody.trim()}
+                  onClick={() => {
+                    const name = newSlashName.trim().replace(/^\//, '')
+                    if (!name || !newSlashBody.trim()) return
+                    if (slashCommands.some((c) => c.name === name)) return
+                    saveSlashCommands([...slashCommands, { name, body: newSlashBody.trim() }])
+                    setNewSlashName('')
+                    setNewSlashBody('')
+                  }}
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>}
 
       {paneContent !== null && (
         <div
           className="pane-overlay"
           tabIndex={-1}
           ref={(el) => el?.focus()}
-          onClick={() => {
-            if (streaming) {
-              setStreaming(false)
-              window.api.stopStream()
-            }
-            setPaneContent(null)
-            requestAnimationFrame(() => textareaRef.current?.focus())
-          }}
+          onClick={() => { setPaneContent(null); requestAnimationFrame(() => textareaRef.current?.focus()) }}
           onKeyDown={(e) => {
             const el = paneViewerRef.current
             if (!el) return
@@ -859,34 +1174,24 @@ function App(): React.JSX.Element {
             switch (e.key) {
               case 'j':
                 el.scrollBy(0, line)
-                streamAutoScroll.current = false
                 break
               case 'k':
                 el.scrollBy(0, -line)
-                streamAutoScroll.current = false
                 break
               case 'd':
                 el.scrollBy(0, half)
-                streamAutoScroll.current = false
                 break
               case 'u':
                 el.scrollBy(0, -half)
-                streamAutoScroll.current = false
                 break
               case 'g':
                 el.scrollTo(0, 0)
-                streamAutoScroll.current = false
                 break
               case 'G':
                 el.scrollTo(0, el.scrollHeight)
-                streamAutoScroll.current = true
                 break
               case 'Escape':
               case 'q':
-                if (streaming) {
-                  setStreaming(false)
-                  window.api.stopStream()
-                }
                 setPaneContent(null)
                 requestAnimationFrame(() => textareaRef.current?.focus())
                 break
@@ -899,35 +1204,8 @@ function App(): React.JSX.Element {
           <div className="pane-popup" onClick={(e) => e.stopPropagation()}>
             <div className="pane-popup-header">
               <span className="pane-popup-title">{selected}</span>
-              {streaming && <span className="stream-badge">LIVE</span>}
-              <button
-                className={`stream-toggle ${streaming ? 'stream-toggle-on' : ''}`}
-                onClick={() => {
-                  if (streaming) {
-                    setStreaming(false)
-                    window.api.stopStream()
-                  } else {
-                    setStreaming(true)
-                    streamAutoScroll.current = true
-                    window.api.startStream(selected)
-                  }
-                }}
-                title={streaming ? 'Stop streaming' : 'Start streaming'}
-              >
-                {streaming ? '⏸' : '▶'}
-              </button>
               <span className="pane-popup-hint">j/k d/u g/G q</span>
-              <button
-                className="pane-popup-close"
-                onClick={() => {
-                  if (streaming) {
-                    setStreaming(false)
-                    window.api.stopStream()
-                  }
-                  setPaneContent(null)
-                  requestAnimationFrame(() => textareaRef.current?.focus())
-                }}
-              >
+              <button className="pane-popup-close" onClick={() => { setPaneContent(null); requestAnimationFrame(() => textareaRef.current?.focus()) }}>
                 Esc
               </button>
             </div>
@@ -961,10 +1239,7 @@ function App(): React.JSX.Element {
               el.dataset.focused = 'true'
             }
           }}
-          onClick={() => {
-            setPaneDetail(null)
-            requestAnimationFrame(() => textareaRef.current?.focus())
-          }}
+          onClick={() => { setPaneDetail(null); requestAnimationFrame(() => textareaRef.current?.focus()) }}
           onKeyDown={(e) => {
             if ((e.target as HTMLElement).tagName === 'INPUT') return
             const el = detailContentRef.current
@@ -1005,17 +1280,19 @@ function App(): React.JSX.Element {
             <div className="pane-popup-header">
               <span className="pane-popup-title">Session Detail</span>
               <span className="pane-popup-hint">j/k d/u g/G q</span>
-              <button
-                className="pane-popup-close"
-                onClick={() => {
-                  setPaneDetail(null)
-                  requestAnimationFrame(() => textareaRef.current?.focus())
-                }}
-              >
+              <button className="pane-popup-close" onClick={() => { setPaneDetail(null); requestAnimationFrame(() => textareaRef.current?.focus()) }}>
                 Esc
               </button>
             </div>
             <div ref={detailContentRef} className="detail-grid">
+              <div className="detail-actions">
+                <button
+                  className="git-btn detail-kill-btn"
+                  onClick={() => setConfirmKill(true)}
+                >
+                  Close Session
+                </button>
+              </div>
               <span className="detail-label">Target</span>
               <span className="detail-value">{paneDetail.target}</span>
               <span className="detail-label">Command</span>
@@ -1050,6 +1327,154 @@ function App(): React.JSX.Element {
                   <pre className="detail-value detail-git-status">{paneDetail.gitStatus}</pre>
                 </>
               )}
+              <div className="detail-actions">
+                <button
+                  className="git-btn detail-kill-btn"
+                  onClick={() => setConfirmKill(true)}
+                >
+                  Close Session
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {createDialog && (
+        <div
+          className="pane-overlay"
+          tabIndex={-1}
+          ref={(el) => {
+            if (el && !el.dataset.focused) {
+              el.focus()
+              el.dataset.focused = 'true'
+            }
+          }}
+          onClick={() => { setCreateDialog(false); requestAnimationFrame(() => textareaRef.current?.focus()) }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setCreateDialog(false)
+              requestAnimationFrame(() => textareaRef.current?.focus())
+              e.preventDefault()
+            }
+          }}
+        >
+          <div className="pane-popup detail-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="pane-popup-header">
+              <span className="pane-popup-title">New Session</span>
+              <button className="pane-popup-close" onClick={() => { setCreateDialog(false); requestAnimationFrame(() => textareaRef.current?.focus()) }}>
+                Esc
+              </button>
+            </div>
+            <div className="create-session-form">
+              <label className="setting-row">
+                <span className="setting-label">Session</span>
+                <select
+                  className="create-session-select"
+                  value={newSessionTarget}
+                  onChange={(e) => setNewSessionTarget(e.target.value)}
+                >
+                  {tmuxSessions.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="setting-row">
+                <span className="setting-label">Command</span>
+                <div className="theme-segment">
+                  <button
+                    className={`theme-btn ${newSessionCommand === 'claude' ? 'theme-btn-active' : ''}`}
+                    onClick={() => setNewSessionCommand('claude')}
+                  >
+                    claude
+                  </button>
+                  <button
+                    className={`theme-btn ${newSessionCommand === 'codex' ? 'theme-btn-active' : ''}`}
+                    onClick={() => setNewSessionCommand('codex')}
+                  >
+                    codex
+                  </button>
+                </div>
+              </label>
+              <button
+                className="git-btn create-session-btn"
+                disabled={!newSessionTarget}
+                onClick={async () => {
+                  const r = await window.api.createSession(newSessionTarget, newSessionCommand)
+                  if (r.success) {
+                    setCreateDialog(false)
+                    setStatus({ message: `Created ${newSessionCommand} in ${newSessionTarget}`, ok: true })
+                    const result = await window.api.listSessions()
+                    setPanes(result)
+                  } else {
+                    setStatus({ message: r.error ?? 'Failed', ok: false })
+                  }
+                  setTimeout(() => setStatus(null), 2000)
+                  requestAnimationFrame(() => textareaRef.current?.focus())
+                }}
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmKill && paneDetail && (
+        <div
+          className="pane-overlay"
+          tabIndex={-1}
+          ref={(el) => {
+            if (el && !el.dataset.focused) {
+              el.focus()
+              el.dataset.focused = 'true'
+            }
+          }}
+          onClick={() => setConfirmKill(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setConfirmKill(false)
+              e.preventDefault()
+            }
+          }}
+        >
+          <div className="pane-popup detail-popup confirm-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="pane-popup-header">
+              <span className="pane-popup-title">Confirm Close</span>
+            </div>
+            <div className="confirm-body">
+              <p>Close session <strong>{paneDetail.target}</strong> ({paneDetail.command})?</p>
+              <div className="confirm-actions">
+                <button
+                  className="git-btn"
+                  onClick={() => setConfirmKill(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="git-btn detail-kill-btn"
+                  onClick={async () => {
+                    const r = await window.api.killPane(paneDetail.target)
+                    setConfirmKill(false)
+                    setPaneDetail(null)
+                    if (r.success) {
+                      setStatus({ message: `Closed ${paneDetail.target}`, ok: true })
+                      if (selected === paneDetail.target) setSelected('')
+                      const result = await window.api.listSessions()
+                      setPanes(result)
+                      if (result.length > 0 && !result.find((p) => p.target === selected)) {
+                        setSelected(result[0].target)
+                      }
+                    } else {
+                      setStatus({ message: r.error ?? 'Failed', ok: false })
+                    }
+                    setTimeout(() => setStatus(null), 2000)
+                    requestAnimationFrame(() => textareaRef.current?.focus())
+                  }}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1065,10 +1490,7 @@ function App(): React.JSX.Element {
               el.dataset.focused = 'true'
             }
           }}
-          onClick={() => {
-            setGitPopup(null)
-            requestAnimationFrame(() => textareaRef.current?.focus())
-          }}
+          onClick={() => { setGitPopup(null); requestAnimationFrame(() => textareaRef.current?.focus()) }}
           onKeyDown={(e) => {
             if ((e.target as HTMLElement).tagName === 'INPUT') return
             if (e.key === 'Escape' || e.key === 'q') {
@@ -1082,20 +1504,12 @@ function App(): React.JSX.Element {
             <div className="pane-popup-header">
               <span className="pane-popup-title">Git — {gitPopup.gitBranch}</span>
               <span className="pane-popup-hint">^a add ^p push</span>
-              <button
-                className="pane-popup-close"
-                onClick={() => {
-                  setGitPopup(null)
-                  requestAnimationFrame(() => textareaRef.current?.focus())
-                }}
-              >
+              <button className="pane-popup-close" onClick={() => { setGitPopup(null); requestAnimationFrame(() => textareaRef.current?.focus()) }}>
                 Esc
               </button>
             </div>
             {gitPopup.gitStatus && (
-              <pre className="detail-value detail-git-status" style={{ margin: '8px 12px' }}>
-                {gitPopup.gitStatus}
-              </pre>
+              <pre className="detail-value detail-git-status" style={{ margin: '8px 12px' }}>{gitPopup.gitStatus}</pre>
             )}
             <div className="git-actions">
               <div className="git-actions-row">
@@ -1103,11 +1517,7 @@ function App(): React.JSX.Element {
                   className="git-btn"
                   onClick={async () => {
                     const r = await window.api.gitAdd(gitPopup.cwd)
-                    setGitResult(
-                      r.success
-                        ? { message: 'Staged all', ok: true }
-                        : { message: r.error ?? 'Failed', ok: false }
-                    )
+                    setGitResult(r.success ? { message: 'Staged all', ok: true } : { message: r.error ?? 'Failed', ok: false })
                     const refreshed = await window.api.getPaneDetail(gitPopup.target)
                     if (refreshed) setGitPopup(refreshed)
                     setTimeout(() => setGitResult(null), 2000)
@@ -1119,11 +1529,7 @@ function App(): React.JSX.Element {
                   className="git-btn git-btn-push"
                   onClick={async () => {
                     const r = await window.api.gitPush(gitPopup.cwd)
-                    setGitResult(
-                      r.success
-                        ? { message: 'Pushed', ok: true }
-                        : { message: r.error ?? 'Failed', ok: false }
-                    )
+                    setGitResult(r.success ? { message: 'Pushed', ok: true } : { message: r.error ?? 'Failed', ok: false })
                     setTimeout(() => setGitResult(null), 2000)
                   }}
                 >
@@ -1140,11 +1546,7 @@ function App(): React.JSX.Element {
                     e.stopPropagation()
                     if (e.key === 'Enter' && commitMsg.trim()) {
                       window.api.gitCommit(gitPopup.cwd, commitMsg.trim()).then(async (r) => {
-                        setGitResult(
-                          r.success
-                            ? { message: 'Committed', ok: true }
-                            : { message: r.error ?? 'Failed', ok: false }
-                        )
+                        setGitResult(r.success ? { message: 'Committed', ok: true } : { message: r.error ?? 'Failed', ok: false })
                         if (r.success) setCommitMsg('')
                         const refreshed = await window.api.getPaneDetail(gitPopup.target)
                         if (refreshed) setGitPopup(refreshed)
@@ -1158,11 +1560,7 @@ function App(): React.JSX.Element {
                   disabled={!commitMsg.trim()}
                   onClick={async () => {
                     const r = await window.api.gitCommit(gitPopup.cwd, commitMsg.trim())
-                    setGitResult(
-                      r.success
-                        ? { message: 'Committed', ok: true }
-                        : { message: r.error ?? 'Failed', ok: false }
-                    )
+                    setGitResult(r.success ? { message: 'Committed', ok: true } : { message: r.error ?? 'Failed', ok: false })
                     if (r.success) setCommitMsg('')
                     const refreshed = await window.api.getPaneDetail(gitPopup.target)
                     if (refreshed) setGitPopup(refreshed)
@@ -1177,6 +1575,147 @@ function App(): React.JSX.Element {
                   {gitResult.message}
                 </span>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {createDialog && (
+        <div
+          className="pane-overlay"
+          tabIndex={-1}
+          ref={(el) => {
+            if (el && !el.dataset.focused) {
+              el.focus()
+              el.dataset.focused = 'true'
+            }
+          }}
+          onClick={() => { setCreateDialog(false); requestAnimationFrame(() => textareaRef.current?.focus()) }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setCreateDialog(false)
+              requestAnimationFrame(() => textareaRef.current?.focus())
+              e.preventDefault()
+            }
+          }}
+        >
+          <div className="pane-popup detail-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="pane-popup-header">
+              <span className="pane-popup-title">New Session</span>
+              <button className="pane-popup-close" onClick={() => { setCreateDialog(false); requestAnimationFrame(() => textareaRef.current?.focus()) }}>
+                Esc
+              </button>
+            </div>
+            <div className="create-session-form">
+              <label className="setting-row">
+                <span className="setting-label">Session</span>
+                <select
+                  className="create-session-select"
+                  value={newSessionTarget}
+                  onChange={(e) => setNewSessionTarget(e.target.value)}
+                >
+                  {tmuxSessions.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="setting-row">
+                <span className="setting-label">Command</span>
+                <div className="theme-segment">
+                  <button
+                    className={`theme-btn ${newSessionCommand === 'claude' ? 'theme-btn-active' : ''}`}
+                    onClick={() => setNewSessionCommand('claude')}
+                  >
+                    claude
+                  </button>
+                  <button
+                    className={`theme-btn ${newSessionCommand === 'codex' ? 'theme-btn-active' : ''}`}
+                    onClick={() => setNewSessionCommand('codex')}
+                  >
+                    codex
+                  </button>
+                </div>
+              </label>
+              <button
+                className="git-btn create-session-btn"
+                disabled={!newSessionTarget}
+                onClick={async () => {
+                  const r = await window.api.createSession(newSessionTarget, newSessionCommand)
+                  if (r.success) {
+                    setCreateDialog(false)
+                    setStatus({ message: `Created ${newSessionCommand} in ${newSessionTarget}`, ok: true })
+                    // Refresh pane list
+                    const result = await window.api.listSessions()
+                    setPanes(result)
+                  } else {
+                    setStatus({ message: r.error ?? 'Failed', ok: false })
+                  }
+                  setTimeout(() => setStatus(null), 2000)
+                  requestAnimationFrame(() => textareaRef.current?.focus())
+                }}
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmKill && paneDetail && (
+        <div
+          className="pane-overlay"
+          tabIndex={-1}
+          ref={(el) => {
+            if (el && !el.dataset.focused) {
+              el.focus()
+              el.dataset.focused = 'true'
+            }
+          }}
+          onClick={() => setConfirmKill(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setConfirmKill(false)
+              e.preventDefault()
+            }
+          }}
+        >
+          <div className="pane-popup detail-popup confirm-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="pane-popup-header">
+              <span className="pane-popup-title">Confirm Close</span>
+            </div>
+            <div className="confirm-body">
+              <p>Close session <strong>{paneDetail.target}</strong> ({paneDetail.command})?</p>
+              <div className="confirm-actions">
+                <button
+                  className="git-btn"
+                  onClick={() => setConfirmKill(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="git-btn detail-kill-btn"
+                  onClick={async () => {
+                    const r = await window.api.killPane(paneDetail.target)
+                    setConfirmKill(false)
+                    setPaneDetail(null)
+                    if (r.success) {
+                      setStatus({ message: `Closed ${paneDetail.target}`, ok: true })
+                      if (selected === paneDetail.target) setSelected('')
+                      const result = await window.api.listSessions()
+                      setPanes(result)
+                      if (result.length > 0 && !result.find((p) => p.target === selected)) {
+                        setSelected(result[0].target)
+                      }
+                    } else {
+                      setStatus({ message: r.error ?? 'Failed', ok: false })
+                    }
+                    setTimeout(() => setStatus(null), 2000)
+                    requestAnimationFrame(() => textareaRef.current?.focus())
+                  }}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
