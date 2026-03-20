@@ -965,3 +965,77 @@
   gap: 8px;
   justify-content: center;
 }
+
+/* ── Slash Picker ── */
+.slash-picker {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  max-height: 160px;
+  overflow-y: auto;
+  margin-bottom: 4px;
+}
+
+.slash-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 4px 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size);
+  transition: background var(--transition-fast);
+}
+
+.slash-item:hover,
+.slash-item-active {
+  background: var(--bg-hover);
+}
+
+.slash-badge {
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-weight: 600;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.slash-badge-user-command {
+  background: var(--accent-muted);
+  color: var(--accent);
+}
+
+.slash-badge-project-command {
+  background: var(--orange-glow);
+  color: var(--orange);
+}
+
+.slash-badge-user-skill {
+  background: var(--green-glow);
+  color: var(--green);
+}
+
+.slash-badge-project-skill {
+  background: rgba(167, 139, 250, 0.15);
+  color: #a78bfa;
+}
+
+.slash-name {
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.slash-desc {
+  color: var(--text-dim);
+  font-size: calc(var(--font-size) - 1px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

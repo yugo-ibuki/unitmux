@@ -36,8 +36,15 @@ interface SendResult {
   error?: string
 }
 
+interface SlashItem {
+  name: string
+  description: string
+  type: 'user-command' | 'project-command' | 'user-skill' | 'project-skill'
+}
+
 interface TmuxAPI {
   listSessions: () => Promise<TmuxPane[]>
+  listCommands: (target: string) => Promise<SlashItem[]>
   sendInput: (target: string, text: string, vimMode?: boolean) => Promise<SendResult>
   capturePane: (target: string) => Promise<string>
   getPaneDetail: (target: string) => Promise<PaneDetail | null>

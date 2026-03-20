@@ -486,3 +486,13 @@ export async function capturePane(target: string): Promise<string> {
     return ''
   }
 }
+
+export async function getPaneCwd(target: string): Promise<string> {
+  if (!TARGET_PATTERN.test(target)) return ''
+  try {
+    const stdout = await run(['display-message', '-t', target, '-p', '#{pane_current_path}'])
+    return stdout.trim()
+  } catch {
+    return ''
+  }
+}

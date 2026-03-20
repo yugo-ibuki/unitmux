@@ -32,6 +32,12 @@ interface TmuxPane {
   prompt: string
 }
 
+interface SlashItem {
+  name: string
+  description: string
+  type: 'user-command' | 'project-command' | 'user-skill' | 'project-skill'
+}
+
 function App(): React.JSX.Element {
   const [panes, setPanes] = useState<TmuxPane[]>([])
   const [selected, setSelected] = useState('')
@@ -88,6 +94,10 @@ function App(): React.JSX.Element {
   const [newSessionTarget, setNewSessionTarget] = useState('')
   const [newSessionCommand, setNewSessionCommand] = useState<'claude' | 'codex'>('claude')
   const [confirmKill, setConfirmKill] = useState(false)
+  const [slashItems, setSlashItems] = useState<SlashItem[]>([])
+  const [slashOpen, setSlashOpen] = useState(false)
+  const [slashCursor, setSlashCursor] = useState(0)
+  const slashLoadedFor = useRef<string | null>(null)
   const detailContentRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const paneViewerRef = useRef<HTMLPreElement>(null)
@@ -377,6 +387,36 @@ function App(): React.JSX.Element {
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.nativeEvent.isComposing) return
+
+      // Slash picker keyboard navigation
+      if (slashOpen) {
+        const filtered = slashItems.filter(
+          (it) => slashFilter === null || it.name.toLowerCase().includes(slashFilter.toLowerCase())
+        )
+        if (e.key === 'ArrowDown') {
+          e.preventDefault()
+          setSlashCursor((c) => Math.min(c + 1, filtered.length - 1))
+          return
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault()
+          setSlashCursor((c) => Math.max(c - 1, 0))
+          return
+        }
+        if ((e.key === 'Enter' || e.key === 'Tab') && filtered.length > 0) {
+          e.preventDefault()
+          const item = filtered[slashCursor] ?? filtered[0]
+          setText(`/${item.name} `)
+          setSlashOpen(false)
+          return
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          setSlashOpen(false)
+          return
+        }
+      }
+
       if (e.key === 'Enter') {
         const isSend =
           sendKey === 'cmd+enter' ? e.metaKey : !e.metaKey && !e.shiftKey
@@ -428,7 +468,7 @@ function App(): React.JSX.Element {
         }
       }
     },
-    [send, sendKey, history, text]
+    [send, sendKey, history, text, slashOpen, slashItems, slashFilter, slashCursor]
   )
 
   const toggleAlwaysOnTop = async (): Promise<void> => {
@@ -436,6 +476,16 @@ function App(): React.JSX.Element {
     await window.api.setAlwaysOnTop(next)
     setAlwaysOnTop(next)
   }
+
+  // Extract the slash filter word: text that starts with "/" with no spaces
+  const slashFilter = text.match(/^\/(\S*)$/)?.[1] ?? null
+
+  const openSlashPicker = useCallback(async () => {
+    if (!selected || slashLoadedFor.current === selected) return
+    slashLoadedFor.current = selected
+    const items = await window.api.listCommands(selected)
+    setSlashItems(items)
+  }, [selected])
 
   const selectedPane = panes.find((p) => p.target === selected)
 
@@ -560,13 +610,54 @@ function App(): React.JSX.Element {
             </div>
           )}
 
+          {slashOpen && (() => {
+            const filtered = slashItems.filter(
+              (it) => slashFilter === null || it.name.toLowerCase().includes(slashFilter.toLowerCase())
+            )
+            if (filtered.length === 0) return null
+            return (
+              <div className="slash-picker">
+                {filtered.map((item, idx) => (
+                  <button
+                    key={`${item.type}:${item.name}`}
+                    className={`slash-item ${idx === slashCursor ? 'slash-item-active' : ''}`}
+                    onMouseEnter={() => setSlashCursor(idx)}
+                    onClick={() => {
+                      setText(`/${item.name} `)
+                      setSlashOpen(false)
+                      requestAnimationFrame(() => textareaRef.current?.focus())
+                    }}
+                  >
+                    <span className={`slash-badge slash-badge-${item.type}`}>
+                      {item.type === 'user-command' ? 'cmd' : item.type === 'project-command' ? 'proj' : item.type === 'user-skill' ? 'skill' : 'pskill'}
+                    </span>
+                    <span className="slash-name">/{item.name}</span>
+                    {item.description && (
+                      <span className="slash-desc">{item.description}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )
+          })()}
+
           <textarea
             ref={textareaRef}
             className="textarea"
             rows={5}
             placeholder={`Type input to send... (${sendKey === 'cmd+enter' ? 'Cmd+Enter' : 'Enter'} to send)`}
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value
+              setText(val)
+              if (/^\/\S*$/.test(val)) {
+                setSlashOpen(true)
+                setSlashCursor(0)
+                openSlashPicker()
+              } else {
+                setSlashOpen(false)
+              }
+            }}
             onKeyDown={handleKeyDown}
           />
 
