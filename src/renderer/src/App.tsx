@@ -6,6 +6,12 @@ interface SlashCommand {
   body: string
 }
 
+interface SkillCommand {
+  name: string
+  body: string
+  source: 'skill-user' | 'skill-project'
+}
+
 interface TmuxChoice {
   number: string
   label: string
@@ -107,18 +113,107 @@ function App(): React.JSX.Element {
   const [newSlashName, setNewSlashName] = useState('')
   const [newSlashBody, setNewSlashBody] = useState('')
   const [slashManagerOpen, setSlashManagerOpen] = useState(false)
+  const [skillCommands, setSkillCommands] = useState<SkillCommand[]>([])
+  // cwd of the currently selected pane — used to scope project-level skills
+  const [selectedCwd, setSelectedCwd] = useState('')
+  // in-memory cache of project skills per cwd: { skills, time }
+  const projectSkillCache = useRef<Map<string, { skills: SkillCommand[]; time: number }>>(new Map())
+
+  // All commands available for autocomplete: user-created commands, then skills
+  // User-created commands take priority if names collide
+  const allCommands = [
+    ...slashCommands,
+    ...skillCommands.filter((sk) => !slashCommands.some((uc) => uc.name === sk.name))
+  ]
 
   const filteredSlash =
     slashFilter !== null
-      ? slashCommands.filter((c) =>
-          c.name.toLowerCase().startsWith(slashFilter.toLowerCase())
-        )
+      ? allCommands.filter((c) => c.name.toLowerCase().startsWith(slashFilter.toLowerCase()))
       : []
 
   const saveSlashCommands = useCallback((cmds: SlashCommand[]) => {
     setSlashCommands(cmds)
     localStorage.setItem('slashCommands', JSON.stringify(cmds))
   }, [])
+
+  const loadUserSkills = useCallback(async (force = false) => {
+    const USER_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+    const cachedTime = Number(localStorage.getItem('userSkillsCacheTime') ?? '0')
+    const now = Date.now()
+    if (!force && now - cachedTime < USER_CACHE_TTL) {
+      try {
+        const cached = JSON.parse(localStorage.getItem('userSkillsCache') ?? '[]') as SkillCommand[]
+        if (cached.length > 0) {
+          setSkillCommands((prev) => {
+            const projectSkills = prev.filter((s) => s.source === 'skill-project')
+            return [...cached, ...projectSkills]
+          })
+          return
+        }
+      } catch {
+        // Fall through to re-fetch
+      }
+    }
+    const result = await window.api.listSkills('')
+    const userSkills: SkillCommand[] = result.user.map((s) => ({
+      name: s.name,
+      body: s.description || s.name,
+      source: 'skill-user'
+    }))
+    localStorage.setItem('userSkillsCache', JSON.stringify(userSkills))
+    localStorage.setItem('userSkillsCacheTime', String(now))
+    setSkillCommands((prev) => {
+      const projectSkills = prev.filter((s) => s.source === 'skill-project')
+      return [...userSkills, ...projectSkills]
+    })
+  }, [])
+
+  const loadProjectSkills = useCallback(async (cwd: string, force = false) => {
+    if (!cwd) return
+    const PROJECT_CACHE_TTL = 30 * 1000 // 30 seconds
+    const cached = projectSkillCache.current.get(cwd)
+    if (!force && cached && Date.now() - cached.time < PROJECT_CACHE_TTL) {
+      setSkillCommands((prev) => {
+        const userSkills = prev.filter((s) => s.source === 'skill-user')
+        return [...userSkills, ...cached.skills]
+      })
+      return
+    }
+    const result = await window.api.listSkills(cwd)
+    const projectSkills: SkillCommand[] = result.project.map((s) => ({
+      name: s.name,
+      body: s.description || s.name,
+      source: 'skill-project'
+    }))
+    projectSkillCache.current.set(cwd, { skills: projectSkills, time: Date.now() })
+    setSkillCommands((prev) => {
+      const userSkills = prev.filter((s) => s.source === 'skill-user')
+      return [...userSkills, ...projectSkills]
+    })
+  }, [])
+
+  // Load user-level skills on mount, refresh every 5 minutes
+  useEffect(() => {
+    loadUserSkills()
+    const id = setInterval(() => loadUserSkills(true), 5 * 60 * 1000)
+    return () => clearInterval(id)
+  }, [loadUserSkills])
+
+  // Load project-level skills when selected pane cwd changes, refresh every 30s
+  useEffect(() => {
+    if (!selected) return
+    window.api.getPaneDetail(selected).then((detail) => {
+      if (!detail?.cwd) return
+      setSelectedCwd(detail.cwd)
+      loadProjectSkills(detail.cwd)
+    })
+  }, [selected, loadProjectSkills])
+
+  useEffect(() => {
+    if (!selectedCwd) return
+    const id = setInterval(() => loadProjectSkills(selectedCwd, true), 30 * 1000)
+    return () => clearInterval(id)
+  }, [selectedCwd, loadProjectSkills])
 
   useEffect(() => {
     window.api.getAlwaysOnTop().then(setAlwaysOnTop)
@@ -360,14 +455,14 @@ function App(): React.JSX.Element {
       setText(val)
       // Detect slash command trigger: starts with / and no spaces yet
       const match = val.match(/^\/(\S*)$/)
-      if (match && slashCommands.length > 0) {
+      if (match && allCommands.length > 0) {
         setSlashFilter(match[1])
         setSlashIndex(0)
       } else {
         setSlashFilter(null)
       }
     },
-    [slashCommands]
+    [allCommands]
   )
 
   const handleKeyDown = useCallback(
@@ -880,11 +975,24 @@ function App(): React.JSX.Element {
             style={{ cursor: 'pointer' }}
             onClick={() => setSlashManagerOpen(!slashManagerOpen)}
           >
-            <span className="setting-label">Slash Commands ({slashCommands.length})</span>
+            <span className="setting-label">Slash Commands ({allCommands.length})</span>
             <span className="slash-toggle-arrow">{slashManagerOpen ? '▾' : '▸'}</span>
           </div>
           {slashManagerOpen && (
             <div className="slash-manager">
+              {skillCommands.length > 0 && (
+                <div className="slash-skill-section">
+                  <span className="slash-skill-label">Skills (read-only)</span>
+                  {skillCommands.map((cmd) => (
+                    <div key={`skill:${cmd.name}`} className="slash-entry slash-entry-skill">
+                      <span className="slash-entry-name">/{cmd.name}</span>
+                      <span className="slash-skill-source">
+                        {cmd.source === 'skill-user' ? 'user' : 'project'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
               {slashCommands.map((cmd) => (
                 <div key={cmd.name} className="slash-entry">
                   {editingSlash?.name === cmd.name ? (

@@ -1131,6 +1131,41 @@
   color: var(--text);
 }
 
+/* ── Skill commands (read-only) in slash manager ── */
+.slash-skill-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 6px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.slash-skill-label {
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 2px;
+}
+
+.slash-entry-skill {
+  opacity: 0.75;
+}
+
+.slash-skill-source {
+  font-size: 8px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  padding: 1px 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 /* ── Last Claude response highlight ── */
 .last-response {
   background: var(--accent-muted);
