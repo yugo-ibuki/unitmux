@@ -95,6 +95,22 @@ app.whenReady().then(() => {
     return getPaneDetail(target)
   })
 
+  ipcMain.handle('tmux:list-tmux-sessions', async () => {
+    try {
+      return await listTmuxSessions()
+    } catch {
+      return []
+    }
+  })
+
+  ipcMain.handle('tmux:create-session', async (_event, { sessionName, command }) => {
+    return createSession(sessionName, command)
+  })
+
+  ipcMain.handle('tmux:kill-pane', async (_event, target: string) => {
+    return killPane(target)
+  })
+
   ipcMain.handle('skills:list', async (_event, cwd: string) => {
     const [user, project] = await Promise.all([
       listSkillsFromDir(homedir()),

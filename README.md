@@ -72,7 +72,9 @@ When `claude` or `codex` presents numbered choices (e.g. "1. Yes / 2. No"), clic
 | `Ctrl+C` | Close session with confirmation (when detail panel is open) |
 | `Ctrl+G` | Open git operations popup (key configurable) |
 | `Ctrl+W` | Toggle compact mode — shrinks window to tab bar only (key configurable) |
+| `Ctrl+N` | Create a new session (select target tmux session and command) |
 | `/` | Open slash command autocomplete (when at start of input) |
+| `Ctrl+C` | Close session with confirmation (when detail panel is open) |
 | `↑` / `↓` | Navigate input history |
 | `Cmd+Shift+H` | Focus huge-mouse from any app (key configurable) |
 | `Escape` | Close popup / refocus textarea |
