@@ -2,7 +2,7 @@ import { defineConfig } from 'vitepress'
 
 export default defineConfig({
   title: 'huge-mouse',
-  description: 'A floating app to control AI sessions in tmux — without touching your mouse',
+  description: 'A floating desktop app that sends input to AI coding assistants running in tmux — without touching your mouse',
   head: [
     ['meta', { property: 'og:title', content: 'huge-mouse' }],
     ['meta', { property: 'og:description', content: 'Control AI sessions in tmux without touching your mouse' }]

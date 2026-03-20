@@ -4,10 +4,11 @@
 
 | Shortcut | Action |
 |----------|--------|
-| `Cmd+Enter` | Send input |
+| `Cmd+Enter` | Send input (configurable) |
 | `Cmd+↑` | Switch to previous pane |
 | `Cmd+↓` | Switch to next pane |
 | `Ctrl+H` / `Ctrl+L` | Switch to previous / next pane |
+| `Ctrl+Cmd+H` / `Ctrl+Cmd+L` | Switch to previous / next session |
 | `Ctrl+1-9` | Send numbered choice directly (modifier configurable) |
 | `Ctrl+P` | Open pane content preview (key configurable) |
 | `Ctrl+D` | Open session detail popup (key configurable) |
@@ -15,6 +16,10 @@
 | `↑` / `↓` | Navigate input history |
 | `Cmd+Shift+H` | Focus huge-mouse from any app (key configurable) |
 | `Escape` | Close popup / refocus textarea |
+
+## Session Navigation
+
+Panes are grouped by tmux session. Use `Ctrl+H` / `Ctrl+L` to navigate between panes within a session. Use `Ctrl+Cmd+H` / `Ctrl+Cmd+L` to jump between sessions.
 
 ## Popup Navigation
 
@@ -37,4 +42,4 @@ All popups support vim-style navigation:
 
 ## Pane Wrap-Around
 
-Pane navigation wraps around — pressing `Cmd+↓` on the last pane selects the first, and vice versa.
+Pane navigation wraps around — pressing `Cmd+↓` on the last pane selects the first, and vice versa. Session navigation wraps around in the same way.

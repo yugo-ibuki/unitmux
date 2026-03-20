@@ -10,9 +10,13 @@ Each pane tag shows a colored dot indicating its current state:
 | 🟡 Yellow | Waiting for your response — choice buttons appear |
 | ⚫ Gray | Busy, processing |
 
+## Session Grouping
+
+Panes are grouped by their tmux session name. Each group shows the session name as a label, making it easy to manage multiple sessions at once.
+
 ## Sending Input
 
-Select a pane from the tags at the top, type your message in the textarea, and press `Cmd+Enter` to send. The input is delivered directly to the tmux pane via `send-keys`.
+Select a pane from the tags at the top, type your message in the textarea, and press `Cmd+Enter` to send (the send key is configurable in Settings). The input is delivered directly to the tmux pane via `send-keys`.
 
 ## Responding to Choices
 

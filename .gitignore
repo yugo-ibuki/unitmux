@@ -6,5 +6,6 @@ out
 *.log*
 .superpowers/
 web/node_modules
+web/dist
 web/docs/.vitepress/cache
 web/docs/.vitepress/dist

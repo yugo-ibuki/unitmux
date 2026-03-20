@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- macOS
+- macOS or Linux
 - [tmux](https://github.com/tmux/tmux) with at least one session running `claude` or `codex`
 
 ## Install
