@@ -478,10 +478,39 @@ export async function killPane(target: string): Promise<{ success: boolean; erro
   }
 }
 
+// Claude CLI footer lines: separator (─+), prompt (❯), session/model info, mode indicator.
+// These appear at the bottom of the pane and are not useful in the preview.
+// Claude CLI footer: everything from the first separator line (─{5,}) to the end.
+// Rather than matching individual lines, find the first separator and cut there.
+function trimCliFooter(output: string): string {
+  const lines = output.replace(/\n+$/, '').split('\n')
+  // Find the last occurrence of a separator line (─ repeated 5+ times)
+  // and remove everything from that point onward, including the blank line before it.
+  let cutIdx = -1
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (/─{5,}/.test(lines[i])) {
+      cutIdx = i
+      // Don't break — keep scanning upward to find the outermost separator
+    } else if (cutIdx !== -1 && lines[i].trim() !== '' && !/^❯/.test(lines[i])) {
+      // Hit real content above a separator — stop scanning
+      break
+    }
+  }
+  if (cutIdx > 0) {
+    // Also trim blank lines immediately before the separator
+    while (cutIdx > 0 && lines[cutIdx - 1].trim() === '') {
+      cutIdx--
+    }
+    return lines.slice(0, cutIdx).join('\n') + '\n'
+  }
+  return lines.join('\n') + '\n'
+}
+
 export async function capturePane(target: string): Promise<string> {
   if (!TARGET_PATTERN.test(target)) return ''
   try {
-    return await run(['capture-pane', '-t', target, '-p', '-S', '-500'])
+    const output = await run(['capture-pane', '-t', target, '-p', '-S', '-500'])
+    return trimCliFooter(output)
   } catch {
     return ''
   }

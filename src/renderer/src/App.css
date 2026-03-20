@@ -320,6 +320,21 @@
   font-style: italic;
 }
 
+/* ── Last prompt bar ── */
+.last-prompt-bar {
+  padding: 2px 10px;
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+  -webkit-app-region: drag;
+}
+
 /* ── Main area ── */
 .main-area {
   display: flex;

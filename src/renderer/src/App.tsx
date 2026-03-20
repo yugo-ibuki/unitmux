@@ -90,6 +90,13 @@ function App(): React.JSX.Element {
   const [editingGitKey, setEditingGitKey] = useState(false)
   const [editingFocusKey, setEditingFocusKey] = useState(false)
   const [paneContent, setPaneContent] = useState<string | null>(null)
+  const [lastPrompts, setLastPrompts] = useState<Record<string, string>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('lastPrompts') ?? '{}')
+    } catch {
+      return {}
+    }
+  })
   const [streaming, setStreaming] = useState(false)
   const [paneDetail, setPaneDetail] = useState<PaneDetail | null>(null)
   const [commitMsg, setCommitMsg] = useState('')
@@ -309,6 +316,21 @@ function App(): React.JSX.Element {
       if (result.length > 0 && !selected) {
         setSelected(result[0].target)
       }
+      // Clean up prompts for panes that no longer exist
+      const activeTargets = new Set(result.map((p) => p.target))
+      setLastPrompts((prev) => {
+        const next: Record<string, string> = {}
+        let changed = false
+        for (const [k, v] of Object.entries(prev)) {
+          if (activeTargets.has(k)) {
+            next[k] = v
+          } else {
+            changed = true
+          }
+        }
+        if (changed) localStorage.setItem('lastPrompts', JSON.stringify(next))
+        return changed ? next : prev
+      })
     }
 
     poll()
@@ -326,6 +348,12 @@ function App(): React.JSX.Element {
       historyIndex.current = -1
       savedDraft.current = ''
       setText('')
+      const firstLine = sent.split('\n')[0].slice(0, 60)
+      setLastPrompts((prev) => {
+        const next = { ...prev, [selected]: firstLine }
+        localStorage.setItem('lastPrompts', JSON.stringify(next))
+        return next
+      })
       setStatus({ message: 'Sent!', ok: true })
     } else {
       setStatus({ message: result.error ?? 'Failed', ok: false })
@@ -733,6 +761,10 @@ function App(): React.JSX.Element {
           {sidebarOpen ? '✕' : '⚙'}
         </button>
       </div>
+
+      {lastPrompts[selected] && (
+        <div className="last-prompt-bar">{lastPrompts[selected]}</div>
+      )}
 
       {!compact && <div className="main-area">
         <div className="content">
