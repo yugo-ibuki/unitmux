@@ -23,10 +23,10 @@
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "electron-vite build && electron-builder --mac",
     "build:linux": "electron-vite build && electron-builder --linux",
-    "web:install": "cd web && npm install",
-    "web:dev": "cd web && npm run dev",
-    "web:build": "cd web && npm run build",
-    "web:start": "cd web && npm start"
+    "web:install": "cd web && vp install",
+    "web:dev": "cd web && vp run dev",
+    "web:build": "cd web && vp run build",
+    "web:preview": "cd web && vp run preview"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
