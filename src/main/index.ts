@@ -119,22 +119,6 @@ app.whenReady().then(() => {
     return { user, project }
   })
 
-  ipcMain.handle('tmux:list-tmux-sessions', async () => {
-    try {
-      return await listTmuxSessions()
-    } catch {
-      return []
-    }
-  })
-
-  ipcMain.handle('tmux:create-session', async (_event, { sessionName, command }) => {
-    return createSession(sessionName, command)
-  })
-
-  ipcMain.handle('tmux:kill-pane', async (_event, target: string) => {
-    return killPane(target)
-  })
-
   ipcMain.handle('git:add', async (_event, cwd: string) => gitAdd(cwd))
   ipcMain.handle('git:commit', async (_event, { cwd, message }) => gitCommit(cwd, message))
   ipcMain.handle('git:push', async (_event, cwd: string) => gitPush(cwd))
