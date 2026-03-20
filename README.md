@@ -66,7 +66,7 @@ When `claude` or `codex` presents numbered choices (e.g. "1. Yes / 2. No"), clic
 | `Ctrl+1-9` | Send numbered choice directly (modifier key configurable) |
 | `Ctrl+H` / `Ctrl+L` | Switch to previous / next pane |
 | `Ctrl+Cmd+H` / `Ctrl+Cmd+L` | Jump to previous / next session |
-| `Ctrl+P` | Open pane content preview (key configurable) |
+| `Ctrl+P` | Open pane content preview / toggle live streaming (key configurable) |
 | `Ctrl+N` | Create a new session (select target tmux session and command) |
 | `Ctrl+D` | Open session detail popup (key configurable) |
 | `Ctrl+C` | Close session with confirmation (when detail panel is open) |
@@ -81,7 +81,7 @@ When `claude` or `codex` presents numbered choices (e.g. "1. Yes / 2. No"), clic
 
 Popups support vim-style navigation: `j`/`k` (scroll), `d`/`u` (half-page), `g`/`G` (top/bottom), `q` (close).
 
-The pane preview (`Ctrl+P`) opens scrolled to the bottom and highlights Claude's last response with a blue accent border.
+The pane preview (`Ctrl+P`) opens scrolled to the bottom and highlights Claude's last response with a blue accent border. Press `Ctrl+P` again to start **live streaming** — the preview updates every 500ms in real time, with a pulsing LIVE badge. You can also toggle streaming with the ▶/⏸ button in the popup header. During streaming, `j`/`k` scrolling pauses auto-scroll; press `G` to resume following the latest output.
 
 ### Session detail
 
