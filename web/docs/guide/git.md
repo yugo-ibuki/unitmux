@@ -4,11 +4,11 @@ Press `Ctrl+G` to open the git operations popup for the selected pane's working 
 
 ## Available Actions
 
-| Action | Description | Shortcut |
-|--------|-------------|----------|
-| **Add All** | Stage all changes (`git add -A`) | `Ctrl+A` |
-| **Commit** | Commit with a message | `Enter` in input |
-| **Push** | Push to remote | `Ctrl+P` |
+| Action      | Description                      | Shortcut         |
+| ----------- | -------------------------------- | ---------------- |
+| **Add All** | Stage all changes (`git add -A`) | `Ctrl+A`         |
+| **Commit**  | Commit with a message            | `Enter` in input |
+| **Push**    | Push to remote                   | `Ctrl+P`         |
 
 ## How It Works
 

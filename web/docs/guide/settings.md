@@ -4,19 +4,19 @@ Click the gear icon (⚙) in the header to open the settings sidebar.
 
 ## Available Settings
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| **Always on Top** | Keep the window above other windows | On |
-| **Opacity** | Adjust window transparency (50%–100%) | 100% |
-| **Font Size** | Adjust the UI font size (10–20px) | 13px |
-| **Theme** | Switch between Dark and Light | Dark |
-| **Choice Key** | Modifier for quick choice shortcuts (`Ctrl` or `Cmd`) | Ctrl |
-| **Send Key** | Key combination to send input (`Cmd+Enter` or `Enter`) | Cmd+Enter |
-| **Vim Mode** | Enable Escape+i sequence before sending input (for vim-mode CLI) | Off |
-| **Preview Key** | Key for pane content preview (`Ctrl+<key>`) | P |
-| **Detail Key** | Key for session detail popup (`Ctrl+<key>`) | D |
-| **Git Key** | Key for git operations popup (`Ctrl+<key>`) | G |
-| **Focus Key** | Global shortcut to focus huge-mouse (`Cmd+Shift+<key>`) | H |
+| Setting           | Description                                                      | Default   |
+| ----------------- | ---------------------------------------------------------------- | --------- |
+| **Always on Top** | Keep the window above other windows                              | On        |
+| **Opacity**       | Adjust window transparency (50%–100%)                            | 100%      |
+| **Font Size**     | Adjust the UI font size (10–20px)                                | 13px      |
+| **Theme**         | Switch between Dark and Light                                    | Dark      |
+| **Choice Key**    | Modifier for quick choice shortcuts (`Ctrl` or `Cmd`)            | Ctrl      |
+| **Send Key**      | Key combination to send input (`Cmd+Enter` or `Enter`)           | Cmd+Enter |
+| **Vim Mode**      | Enable Escape+i sequence before sending input (for vim-mode CLI) | Off       |
+| **Preview Key**   | Key for pane content preview (`Ctrl+<key>`)                      | P         |
+| **Detail Key**    | Key for session detail popup (`Ctrl+<key>`)                      | D         |
+| **Git Key**       | Key for git operations popup (`Ctrl+<key>`)                      | G         |
+| **Focus Key**     | Global shortcut to focus huge-mouse (`Cmd+Shift+<key>`)          | H         |
 
 ## Send Key
 

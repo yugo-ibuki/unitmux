@@ -4,11 +4,11 @@
 
 Each pane tag shows a colored dot indicating its current state:
 
-| Indicator | Meaning |
-|-----------|---------|
-| 🟢 Green | Ready for input |
+| Indicator | Meaning                                           |
+| --------- | ------------------------------------------------- |
+| 🟢 Green  | Ready for input                                   |
 | 🟡 Yellow | Waiting for your response — choice buttons appear |
-| ⚫ Gray | Busy, processing |
+| ⚫ Gray   | Busy, processing                                  |
 
 ## Session Grouping
 
@@ -29,12 +29,12 @@ When `claude` or `codex` presents numbered choices (e.g. "1. Yes / 2. No"), clic
 
 Press `Ctrl+P` to open a scrollable preview of the selected pane's output. Navigate with vim-style keys:
 
-| Key | Action |
-|-----|--------|
-| `j` / `k` | Scroll line by line |
-| `d` / `u` | Scroll half page |
-| `g` / `G` | Jump to top / bottom |
-| `q` or `Esc` | Close |
+| Key          | Action               |
+| ------------ | -------------------- |
+| `j` / `k`    | Scroll line by line  |
+| `d` / `u`    | Scroll half page     |
+| `g` / `G`    | Jump to top / bottom |
+| `q` or `Esc` | Close                |
 
 ## Session Detail
 
