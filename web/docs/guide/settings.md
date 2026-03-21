@@ -16,7 +16,7 @@ Click the gear icon (⚙) in the header to open the settings sidebar.
 | **Preview Key**   | Key for pane content preview (`Ctrl+<key>`)                      | P         |
 | **Detail Key**    | Key for session detail popup (`Ctrl+<key>`)                      | D         |
 | **Git Key**       | Key for git operations popup (`Ctrl+<key>`)                      | G         |
-| **Focus Key**     | Global shortcut to focus huge-mouse (`Cmd+Shift+<key>`)          | H         |
+| **Focus Key**     | Global shortcut to focus unitmux (`Cmd+Shift+<key>`)          | H         |
 
 ## Send Key
 
@@ -27,7 +27,7 @@ Choose between two send behaviors:
 
 ## Vim Mode
 
-When enabled, huge-mouse sends `Escape` followed by `i` before delivering your input. This ensures the AI CLI is in insert mode if you are using vim-style key bindings in your terminal.
+When enabled, unitmux sends `Escape` followed by `i` before delivering your input. This ensures the AI CLI is in insert mode if you are using vim-style key bindings in your terminal.
 
 ## Changing Key Bindings
 

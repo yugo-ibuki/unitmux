@@ -116,7 +116,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.huge-mouse')
+  electronApp.setAppUserModelId('com.unitmux')
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)

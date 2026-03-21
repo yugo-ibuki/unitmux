@@ -1,11 +1,11 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-  title: 'huge-mouse',
+  title: 'unitmux',
   description:
     'A floating desktop app that sends input to AI coding assistants running in tmux — without touching your mouse',
   head: [
-    ['meta', { property: 'og:title', content: 'huge-mouse' }],
+    ['meta', { property: 'og:title', content: 'unitmux' }],
     [
       'meta',
       {
@@ -17,7 +17,7 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },
-      { text: 'GitHub', link: 'https://github.com/yugo-ibuki/huge-mouse' }
+      { text: 'GitHub', link: 'https://github.com/yugo-ibuki/unitmux' }
     ],
     sidebar: [
       {
@@ -31,7 +31,7 @@ export default defineConfig({
         ]
       }
     ],
-    socialLinks: [{ icon: 'github', link: 'https://github.com/yugo-ibuki/huge-mouse' }],
+    socialLinks: [{ icon: 'github', link: 'https://github.com/yugo-ibuki/unitmux' }],
     footer: {
       message: 'Released under the MIT License.',
       copyright: 'Copyright © 2025 yugo-ibuki'

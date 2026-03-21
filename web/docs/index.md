@@ -2,7 +2,7 @@
 layout: home
 
 hero:
-  name: huge-mouse
+  name: unitmux
   text: Control AI sessions without your mouse
   tagline: A floating desktop app that talks to AI coding assistants running in tmux — entirely from your keyboard.
   actions:
@@ -11,7 +11,7 @@ hero:
       link: /guide/getting-started
     - theme: alt
       text: View on GitHub
-      link: https://github.com/yugo-ibuki/huge-mouse
+      link: https://github.com/yugo-ibuki/unitmux
 
 features:
   - icon: 🖱️

@@ -10,12 +10,12 @@
 ### Homebrew (recommended)
 
 ```bash
-brew install --cask yugo-ibuki/tap/huge-mouse
+brew install --cask yugo-ibuki/tap/unitmux
 ```
 
 ### Manual
 
-Download the latest DMG from the [Releases](https://github.com/yugo-ibuki/huge-mouse/releases) page and drag the app to `/Applications`.
+Download the latest DMG from the [Releases](https://github.com/yugo-ibuki/unitmux/releases) page and drag the app to `/Applications`.
 
 ### macOS Gatekeeper warning
 
@@ -26,7 +26,7 @@ On first launch, macOS may block the app because it is not notarized.
 ## First Launch
 
 1. Start `claude` or `codex` inside a tmux pane
-2. Open huge-mouse — it automatically finds your AI panes
+2. Open unitmux — it automatically finds your AI panes
 3. Select a pane from the tags at the top
 4. Type your message and press `Cmd+Enter` to send
 

@@ -1,5 +1,5 @@
-appId: com.yugo-ibuki.huge-mouse
-productName: Huge Mouse
+appId: com.yugo-ibuki.unitmux
+productName: Unitmux
 directories:
   buildResources: build
 files:
@@ -12,7 +12,7 @@ files:
 asarUnpack:
   - resources/**
 win:
-  executableName: huge-mouse
+  executableName: unitmux
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -43,4 +43,4 @@ npmRebuild: false
 publish:
   provider: github
   owner: yugo-ibuki
-  repo: huge-mouse
+  repo: unitmux

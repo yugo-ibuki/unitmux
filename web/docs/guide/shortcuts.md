@@ -14,7 +14,7 @@
 | `Ctrl+D`                    | Open session detail popup (key configurable)          |
 | `Ctrl+G`                    | Open git operations popup (key configurable)          |
 | `↑` / `↓`                   | Navigate input history                                |
-| `Cmd+Shift+H`               | Focus huge-mouse from any app (key configurable)      |
+| `Cmd+Shift+H`               | Focus unitmux from any app (key configurable)      |
 | `Escape`                    | Close popup / refocus textarea                        |
 
 ## Session Navigation

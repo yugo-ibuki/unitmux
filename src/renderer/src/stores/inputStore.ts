@@ -23,7 +23,7 @@ interface InputActions {
   updateProjectSkills: (skills: SkillCommand[]) => void
 }
 
-const SLASH_COMMANDS_KEY = 'huge-mouse:slashCommands'
+const SLASH_COMMANDS_KEY = 'unitmux:slashCommands'
 
 function loadSlashCommands(): SlashCommand[] {
   try {

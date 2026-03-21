@@ -50,4 +50,4 @@ Use `↑` / `↓` arrow keys in the textarea to navigate through previously sent
 
 ## Global Focus
 
-Press `Cmd+Shift+H` to bring huge-mouse to the front from any app. The key is configurable in Settings.
+Press `Cmd+Shift+H` to bring unitmux to the front from any app. The key is configurable in Settings.

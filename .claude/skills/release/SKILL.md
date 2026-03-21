@@ -1,11 +1,11 @@
 ---
 name: release
-description: Release a new version of huge-mouse. Use when the user says "リリース", "release", "バージョン上げて", or wants to publish a new version. Handles version bump, commit, tag, push, and CI monitoring. Also use when the user asks about the release process or wants to check release status.
+description: Release a new version of unitmux. Use when the user says "リリース", "release", "バージョン上げて", or wants to publish a new version. Handles version bump, commit, tag, push, and CI monitoring. Also use when the user asks about the release process or wants to check release status.
 ---
 
 # Release
 
-Automate the huge-mouse release process: version bump → commit → tag → push → CI build.
+Automate the unitmux release process: version bump → commit → tag → push → CI build.
 
 ## Prerequisites
 
@@ -117,7 +117,7 @@ After replacing the DMG, update the Homebrew cask formula:
    shasum -a 256 dist/<local-dmg-filename>
    ```
 
-2. Update the checksum in the tap repo (`homebrew-tap/Casks/huge-mouse.rb`):
+2. Update the checksum in the tap repo (`homebrew-tap/Casks/unitmux.rb`):
    - Update `version`
    - Update `sha256`
    - Update the download URL if the filename changed
@@ -129,7 +129,7 @@ After replacing the DMG, update the Homebrew cask formula:
 - [ ] CI build completed
 - [ ] macOS DMG replaced with local build
 - [ ] Homebrew tap checksum updated
-- [ ] Verified `brew install --cask yugo-ibuki/tap/huge-mouse` works
+- [ ] Verified `brew install --cask yugo-ibuki/tap/unitmux` works
 
 ## Important rules
 

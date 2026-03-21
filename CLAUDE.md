@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-huge-mouse is a floating Electron desktop app that sends input to tmux sessions running `claude` or `codex` commands. It provides a lightweight UI for selecting and sending commands to active tmux panes.
+unitmux is a floating Electron desktop app that sends input to tmux sessions running `claude` or `codex` commands. It provides a lightweight UI for selecting and sending commands to active tmux panes.
 
 - Electron 39 + React 19 + TypeScript 5.9
 - Build tooling: electron-vite + electron-builder

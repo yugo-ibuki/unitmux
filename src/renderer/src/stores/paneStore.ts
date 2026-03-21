@@ -14,7 +14,7 @@ interface PaneActions {
   cleanupPrompts: (activeTargets: string[]) => void
 }
 
-const LAST_PROMPTS_KEY = 'huge-mouse:lastPrompts'
+const LAST_PROMPTS_KEY = 'unitmux:lastPrompts'
 
 function loadLastPrompts(): Record<string, string> {
   try {

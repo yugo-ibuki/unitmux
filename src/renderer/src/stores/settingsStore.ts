@@ -34,7 +34,7 @@ interface SettingsActions {
   setCompactKey: (value: string) => void
 }
 
-const STORAGE_KEY = 'huge-mouse:settings'
+const STORAGE_KEY = 'unitmux:settings'
 
 function loadSetting<T>(key: string, defaultValue: T): T {
   try {

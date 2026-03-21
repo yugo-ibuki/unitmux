@@ -1,4 +1,4 @@
-# huge-mouse
+# unitmux
 
 A floating desktop app that sends input to tmux sessions running `claude` or `codex`.
 
@@ -6,7 +6,7 @@ A floating desktop app that sends input to tmux sessions running `claude` or `co
 
 ## What it does
 
-huge-mouse sits on top of your other windows and lets you type commands to AI coding assistants (`claude`, `codex`) running in tmux — without switching to your terminal.
+unitmux sits on top of your other windows and lets you type commands to AI coding assistants (`claude`, `codex`) running in tmux — without switching to your terminal.
 
 It auto-discovers active AI panes, shows their status, and even lets you click numbered choices when the AI asks a question.
 
@@ -20,12 +20,12 @@ It auto-discovers active AI panes, shows their status, and even lets you click n
 ### Homebrew (recommended)
 
 ```bash
-brew install --cask yugo-ibuki/tap/huge-mouse
+brew install --cask yugo-ibuki/tap/unitmux
 ```
 
 ### Manual
 
-Download the latest DMG from the [Releases](https://github.com/yugo-ibuki/huge-mouse/releases) page and drag the app to `/Applications`.
+Download the latest DMG from the [Releases](https://github.com/yugo-ibuki/unitmux/releases) page and drag the app to `/Applications`.
 
 ### macOS Gatekeeper warning
 
@@ -36,7 +36,7 @@ On first launch, macOS may block the app because it is not notarized. To open it
 ## How to use
 
 1. Start `claude` or `codex` inside a tmux pane
-2. Open huge-mouse — it automatically finds your AI panes
+2. Open unitmux — it automatically finds your AI panes
 3. Select a pane from the tags at the top
 4. Type your message and press `Cmd+Enter` to send (configurable to `Enter` in settings)
 
@@ -76,7 +76,7 @@ When `claude` or `codex` presents numbered choices (e.g. "1. Yes / 2. No"), clic
 | `/`                         | Open slash command autocomplete (when at start of input)                |
 | `Ctrl+C`                    | Close session with confirmation (when detail panel is open)             |
 | `↑` / `↓`                   | Navigate input history                                                  |
-| `Cmd+Shift+H`               | Focus huge-mouse from any app (key configurable)                        |
+| `Cmd+Shift+H`               | Focus unitmux from any app (key configurable)                        |
 | `Escape`                    | Close popup / refocus textarea                                          |
 
 Popups support vim-style navigation: `j`/`k` (scroll), `d`/`u` (half-page), `g`/`G` (top/bottom), `q` (close).
@@ -114,7 +114,7 @@ Click the gear icon to access settings:
 - **Preview Key** — change the key for pane content preview (`Ctrl+<key>`)
 - **Detail Key** — change the key for session detail popup (`Ctrl+<key>`)
 - **Git Key** — change the key for git operations popup (`Ctrl+<key>`)
-- **Focus Key** — change the global shortcut to focus huge-mouse (`Cmd+Shift+<key>`)
+- **Focus Key** — change the global shortcut to focus unitmux (`Cmd+Shift+<key>`)
 - **Slash Commands** — add, edit, and delete reusable slash commands
 
 ## License

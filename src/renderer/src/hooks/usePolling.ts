@@ -5,8 +5,8 @@ import { useInputStore } from '../stores/inputStore'
 
 const USER_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 const PROJECT_CACHE_TTL = 30 * 1000 // 30 seconds
-const USER_SKILLS_CACHE_KEY = 'huge-mouse:userSkillsCache'
-const USER_SKILLS_CACHE_TIME_KEY = 'huge-mouse:userSkillsCacheTime'
+const USER_SKILLS_CACHE_KEY = 'unitmux:userSkillsCache'
+const USER_SKILLS_CACHE_TIME_KEY = 'unitmux:userSkillsCacheTime'
 
 export function usePolling(): void {
   const projectSkillCache = useRef<Map<string, { skills: SkillCommand[]; time: number }>>(new Map())
