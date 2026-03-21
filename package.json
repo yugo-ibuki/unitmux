@@ -1,6 +1,6 @@
 {
   "name": "huge-mouse",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Send input to tmux sessions from a floating desktop app",
   "main": "./out/main/index.js",
   "author": "yugo-ibuki",
@@ -10,6 +10,7 @@
     "url": "git+https://github.com/yugo-ibuki/huge-mouse.git"
   },
   "scripts": {
+    "test": "vitest run",
     "format": "prettier --write .",
     "lint": "eslint --cache .",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
@@ -51,6 +52,7 @@
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "typescript": "^5.9.3",
-    "vite": "^7.2.6"
+    "vite": "^7.2.6",
+    "vitest": "^4.1.0"
   }
 }

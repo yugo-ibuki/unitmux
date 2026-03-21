@@ -121,17 +121,39 @@ async function capturePaneContent(target: string): Promise<string> {
   }
 }
 
-// First choice line has a prompt marker (❯›>☞), e.g. " ❯ 1. Yes"
-// Subsequent choices have only spaces before the number, e.g. "  2. No"
-// We detect the marker line first, then collect following numbered lines as part of the same choice group.
-const MARKER_CHOICE_PATTERN = /^\s*[❯›>☞]\s*(\d+)[.)]\s+(.+)$/
-const PLAIN_CHOICE_PATTERN = /^\s+(\d+)[.)]\s+(.+)$/
+// Choice patterns in Claude CLI:
+//   One-per-line with marker:  " ❯ 1. Yes"  /  "  2. No"
+//   One-per-line with colon:   "  1: Bad"
+//   Inline (multiple on one line): "  1: Bad    2: Fine   3: Good   0: Dismiss"
+// Marker characters: ❯ › > ☞ ●
+const MARKER_CHOICE_PATTERN = /^\s*[❯›>☞●]\s*(\d+)[.:)]\s+(.+)$/
+const PLAIN_CHOICE_PATTERN = /^\s+(\d+)[.:)]\s+(.+)$/
+// Inline choices: multiple "N: label" separated by whitespace on a single line
+const INLINE_CHOICE_PATTERN = /(\d+)[.:)]\s+(\S+)/g
+
+// Session feedback prompt — optional rating, not an actionable choice
+const SESSION_RATING_PATTERN = /how is claude doing/i
 
 function parseChoices(content: string): TmuxChoice[] {
   const lines = content.split('\n').slice(-20)
   const choices: TmuxChoice[] = []
   let inChoiceBlock = false
-  for (const line of lines) {
+  for (let li = 0; li < lines.length; li++) {
+    const line = lines[li]
+    // Try inline format first: "  1: Bad    2: Fine   3: Good"
+    const inlineMatches = [...line.matchAll(INLINE_CHOICE_PATTERN)]
+    if (inlineMatches.length >= 2) {
+      // Skip session rating feedback (not an actionable choice)
+      const prevLine = li > 0 ? lines[li - 1] : ''
+      if (SESSION_RATING_PATTERN.test(prevLine)) continue
+      // Multiple choices on one line — inline format
+      inChoiceBlock = true
+      for (const m of inlineMatches) {
+        choices.push({ number: m[1], label: m[2].trim() })
+      }
+      continue
+    }
+
     const markerMatch = line.match(MARKER_CHOICE_PATTERN)
     if (markerMatch) {
       inChoiceBlock = true
@@ -193,13 +215,14 @@ const CODEX_IDLE_INDICATORS = [
 ]
 
 function detectStatusClaude(title: string, content: string): { status: PaneStatus; choices: TmuxChoice[]; prompt: string } {
-  if (!title.includes('✳')) return { status: 'busy', choices: [], prompt: '' }
-
+  // Always check for choices first — permission prompts (e.g. "Do you want to proceed?
+  // ❯ 1. Yes  2. No") can appear while the title still shows ⠂ (busy).
   const choices = parseChoices(content)
-
   if (choices.length > 0) {
     return { status: 'waiting', choices, prompt: parsePrompt(content) }
   }
+
+  if (!title.includes('✳')) return { status: 'busy', choices: [], prompt: '' }
 
   const lines = content.split('\n').slice(-10)
   for (const pattern of WAITING_PATTERNS) {
@@ -308,7 +331,7 @@ export async function sendInput(
     // Detect if the pane is showing choices (waiting state).
     // When choices are visible and input is a single digit (1-9),
     // skip insert mode switch since choices work in normal mode.
-    const content = await capturePane(target)
+    const content = await capturePaneContent(target)
     const titleAndCmd = await run(['display-message', '-t', target, '-p', '#{pane_title}|#{pane_current_command}'])
     const [title, command] = titleAndCmd.trim().split('|')
     const { status } = detectStatus(title, content, command)
@@ -514,4 +537,11 @@ export async function capturePane(target: string): Promise<string> {
   } catch {
     return ''
   }
+}
+
+// Exported for testing only
+export const _testInternals = {
+  parseChoices,
+  detectStatusClaude,
+  trimCliFooter
 }
