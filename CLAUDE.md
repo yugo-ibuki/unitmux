@@ -64,6 +64,7 @@ src/renderer/src/  → React UI (browser environment)
 ### TypeScript Configuration
 
 Three separate tsconfigs via composite project references:
+
 - `tsconfig.node.json` — main + preload (Node environment)
 - `tsconfig.web.json` — renderer (DOM + React, `@renderer` path alias → `src/renderer/src`)
 - `tsconfig.json` — root that references both
