@@ -2,10 +2,17 @@ import { defineConfig } from 'vitepress'
 
 export default defineConfig({
   title: 'huge-mouse',
-  description: 'A floating desktop app that sends input to AI coding assistants running in tmux — without touching your mouse',
+  description:
+    'A floating desktop app that sends input to AI coding assistants running in tmux — without touching your mouse',
   head: [
     ['meta', { property: 'og:title', content: 'huge-mouse' }],
-    ['meta', { property: 'og:description', content: 'Control AI sessions in tmux without touching your mouse' }]
+    [
+      'meta',
+      {
+        property: 'og:description',
+        content: 'Control AI sessions in tmux without touching your mouse'
+      }
+    ]
   ],
   themeConfig: {
     nav: [
@@ -24,9 +31,7 @@ export default defineConfig({
         ]
       }
     ],
-    socialLinks: [
-      { icon: 'github', link: 'https://github.com/yugo-ibuki/huge-mouse' }
-    ],
+    socialLinks: [{ icon: 'github', link: 'https://github.com/yugo-ibuki/huge-mouse' }],
     footer: {
       message: 'Released under the MIT License.',
       copyright: 'Copyright © 2025 yugo-ibuki'
