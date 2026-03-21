@@ -1,14 +1,14 @@
 # unitmux
 
-A floating desktop app that sends input to tmux sessions running `claude` or `codex`.
+Unifies your AI coding sessions into a single floating interface.
 
 [日本語版はこちら](README.ja.md)
 
 ## What it does
 
-unitmux sits on top of your other windows and lets you type commands to AI coding assistants (`claude`, `codex`) running in tmux — without switching to your terminal.
+unitmux is a small always-on-top window that connects to all your AI coding assistants (`claude`, `codex`) running in tmux. Send commands, see status, and pick choices — all from one place, without switching terminals.
 
-It auto-discovers active AI panes, shows their status, and even lets you click numbered choices when the AI asks a question.
+
 
 ## Requirements
 
