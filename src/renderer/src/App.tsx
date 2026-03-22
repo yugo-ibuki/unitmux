@@ -11,6 +11,7 @@ import { Sidebar } from './components/Sidebar'
 import { PreviewOverlay } from './components/PreviewOverlay'
 import { DetailOverlay } from './components/DetailOverlay'
 import { GitOverlay } from './components/GitOverlay'
+import { HelpOverlay } from './components/HelpOverlay'
 import { CreateDialog } from './components/CreateDialog'
 import { ConfirmDialog } from './components/ConfirmDialog'
 
@@ -122,6 +123,7 @@ function App(): React.JSX.Element {
       {gitPopup !== null && <GitOverlay />}
       {createDialog && <CreateDialog />}
       {confirmKill && paneDetail && <ConfirmDialog />}
+      <HelpOverlay />
     </div>
   )
 }

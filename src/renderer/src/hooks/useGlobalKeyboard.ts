@@ -191,6 +191,14 @@ export function useGlobalKeyboard(
         }
       }
 
+      // Ctrl+, → toggle help overlay
+      if (e.ctrlKey && e.key === ',' && !e.metaKey) {
+        e.preventDefault()
+        const { helpOpen, setHelpOpen } = useUiStore.getState()
+        setHelpOpen(!helpOpen)
+        return
+      }
+
       // Ctrl+N → open create session dialog
       if (e.ctrlKey && e.key === 'n' && !e.metaKey) {
         e.preventDefault()
@@ -212,6 +220,13 @@ export function useGlobalKeyboard(
 
       // Escape → close overlays in priority order
       if (e.key === 'Escape') {
+        const { helpOpen, setHelpOpen: closeHelp } = useUiStore.getState()
+        if (helpOpen) {
+          e.preventDefault()
+          closeHelp(false)
+          requestAnimationFrame(() => textareaRef.current?.focus())
+          return
+        }
         if (confirmKill) {
           e.preventDefault()
           setConfirmKill(false)

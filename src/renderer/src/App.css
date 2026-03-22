@@ -1417,3 +1417,55 @@
   gap: 8px;
   justify-content: center;
 }
+
+/* ── Help overlay ── */
+.help-popup {
+  max-width: 420px;
+  max-height: 80vh;
+}
+
+.help-content {
+  padding: 8px 14px 14px;
+  overflow-y: auto;
+  max-height: calc(80vh - 40px);
+}
+
+.help-section {
+  margin-bottom: 12px;
+}
+
+.help-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.help-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+  gap: 12px;
+}
+
+.help-key {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  padding: 1px 5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.help-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: right;
+}

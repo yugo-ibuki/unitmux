@@ -25,6 +25,7 @@ interface UiState {
   newSessionTarget: string
   newSessionCommand: 'claude' | 'codex'
   confirmKill: boolean
+  helpOpen: boolean
 }
 
 interface UiActions {
@@ -41,6 +42,7 @@ interface UiActions {
   setNewSessionTarget: (value: string) => void
   setNewSessionCommand: (value: 'claude' | 'codex') => void
   setConfirmKill: (value: boolean) => void
+  setHelpOpen: (value: boolean) => void
   flashStatus: (message: string, ok: boolean) => void
 }
 
@@ -58,6 +60,7 @@ export const useUiStore = create<UiState & UiActions>((set) => ({
   newSessionTarget: '',
   newSessionCommand: 'claude',
   confirmKill: false,
+  helpOpen: false,
 
   setSidebarOpen: (value) => set({ sidebarOpen: value }),
   setCompact: (value) => set({ compact: value }),
@@ -72,11 +75,12 @@ export const useUiStore = create<UiState & UiActions>((set) => ({
   setNewSessionTarget: (value) => set({ newSessionTarget: value }),
   setNewSessionCommand: (value) => set({ newSessionCommand: value }),
   setConfirmKill: (value) => set({ confirmKill: value }),
+  setHelpOpen: (value) => set({ helpOpen: value }),
 
   flashStatus: (message, ok) => {
     set({ status: { message, ok } })
     setTimeout(() => {
       set({ status: null })
-    }, 2000)
+    }, ok ? 2000 : 5000)
   }
 }))
