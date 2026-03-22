@@ -235,10 +235,15 @@ app.whenReady().then(() => {
     return globalShortcut.register(accelerator, () => {
       const win = BrowserWindow.getAllWindows()[0]
       if (win) {
-        if (isCompact) toggleCompact()
-        win.show()
-        win.focus()
-        win.webContents.send('focus-textarea')
+        if (win.isFocused()) {
+          win.blur()
+          if (process.platform === 'darwin') app.hide()
+        } else {
+          if (isCompact) toggleCompact()
+          win.show()
+          win.focus()
+          win.webContents.send('focus-textarea')
+        }
       }
     })
   }
