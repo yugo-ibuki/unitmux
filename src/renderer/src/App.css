@@ -245,12 +245,16 @@
   background: var(--green);
   box-shadow: 0 0 6px var(--green-glow);
   animation: pulse-idle 3s ease-in-out infinite;
+  will-change: opacity;
+  contain: layout style;
 }
 
 .dot-busy {
   background: var(--orange);
   box-shadow: 0 0 6px var(--orange-glow);
   animation: pulse-busy 1.5s ease-in-out infinite;
+  will-change: opacity;
+  contain: layout style;
 }
 
 .dot-waiting {
@@ -696,6 +700,8 @@
   font-family: var(--font-mono);
   outline: none;
   animation: pulse-capture 1s ease-in-out infinite;
+  will-change: opacity;
+  contain: layout style;
 }
 
 @keyframes pulse-capture {
@@ -785,6 +791,8 @@
   padding: 1px 6px;
   border-radius: 3px;
   animation: stream-pulse 1.5s ease-in-out infinite;
+  will-change: opacity;
+  contain: layout style;
 }
 
 @keyframes stream-pulse {
@@ -1346,6 +1354,8 @@
   margin-left: 6px;
   letter-spacing: 1px;
   animation: pulse-live 1.5s ease-in-out infinite;
+  will-change: opacity;
+  contain: layout style;
 }
 
 @keyframes pulse-live {

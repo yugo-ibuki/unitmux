@@ -1,9 +1,10 @@
+import { memo, useMemo } from 'react'
 import type { TmuxPane } from '../types'
 import { usePaneStore } from '../stores/paneStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useUiStore } from '../stores/uiStore'
 
-export function PaneHeader(): React.JSX.Element {
+export const PaneHeader = memo(function PaneHeader(): React.JSX.Element {
   const panes = usePaneStore((s) => s.panes)
   const selected = usePaneStore((s) => s.selected)
   const setSelected = usePaneStore((s) => s.setSelected)
@@ -11,11 +12,15 @@ export function PaneHeader(): React.JSX.Element {
   const sidebarOpen = useUiStore((s) => s.sidebarOpen)
   const setSidebarOpen = useUiStore((s) => s.setSidebarOpen)
 
-  const groups = panes.reduce<Record<string, TmuxPane[]>>((acc, p) => {
-    const session = p.target.split(':')[0]
-    ;(acc[session] ??= []).push(p)
-    return acc
-  }, {})
+  const groups = useMemo(
+    () =>
+      panes.reduce<Record<string, TmuxPane[]>>((acc, p) => {
+        const session = p.target.split(':')[0]
+        ;(acc[session] ??= []).push(p)
+        return acc
+      }, {}),
+    [panes]
+  )
 
   return (
     <div className="header">
@@ -98,4 +103,4 @@ export function PaneHeader(): React.JSX.Element {
       </button>
     </div>
   )
-}
+})

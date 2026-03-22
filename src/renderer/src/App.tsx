@@ -19,6 +19,10 @@ import { usePolling } from './hooks/usePolling'
 import { useStreaming } from './hooks/useStreaming'
 import { useGlobalKeyboard } from './hooks/useGlobalKeyboard'
 
+import type { TmuxChoice } from './types'
+
+const EMPTY_CHOICES: TmuxChoice[] = []
+
 function App(): React.JSX.Element {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -30,8 +34,10 @@ function App(): React.JSX.Element {
   const confirmKill = useUiStore((s) => s.confirmKill)
   const lastPrompts = usePaneStore((s) => s.lastPrompts)
   const selected = usePaneStore((s) => s.selected)
-  const selectedPane = usePaneStore((s) => s.panes.find((p) => p.target === s.selected))
-  const vimMode = useSettingsStore((s) => s.vimMode)
+  const selectedPrompt = usePaneStore((s) => s.panes.find((p) => p.target === s.selected)?.prompt)
+  const selectedChoices = usePaneStore(
+    (s) => s.panes.find((p) => p.target === s.selected)?.choices ?? EMPTY_CHOICES
+  )
 
   // Boot: read initial window state
   useEffect(() => {
@@ -79,20 +85,20 @@ function App(): React.JSX.Element {
       {!compact && (
         <div className="main-area">
           <div className="content">
-            {selectedPane?.prompt && (
+            {selectedPrompt && (
               <div className="prompt-box">
-                <pre className="prompt-text">{selectedPane.prompt}</pre>
-                {selectedPane.choices.length > 0 && (
+                <pre className="prompt-text">{selectedPrompt}</pre>
+                {selectedChoices.length > 0 && (
                   <div className="prompt-choices">
-                    {selectedPane.choices.map((c) => (
+                    {selectedChoices.map((c) => (
                       <button
                         key={c.number}
                         className="prompt-choice-btn"
                         onClick={async () => {
-                          await window.api.sendInput(selectedPane.target, c.number, vimMode)
-                          useUiStore
-                            .getState()
-                            .flashStatus(`Sent ${c.number} → ${selectedPane.target}`, true)
+                          const sel = usePaneStore.getState().selected
+                          const vm = useSettingsStore.getState().vimMode
+                          await window.api.sendInput(sel, c.number, vm)
+                          useUiStore.getState().flashStatus(`Sent ${c.number} → ${sel}`, true)
                         }}
                         onKeyDown={(e) => {
                           if (e.key === 'Tab' && !e.shiftKey) {
