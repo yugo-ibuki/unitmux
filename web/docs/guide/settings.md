@@ -16,6 +16,7 @@ Click the gear icon (⚙) in the header to open the settings sidebar.
 | **Preview Key**   | Key for pane content preview (`Ctrl+<key>`)                      | P         |
 | **Detail Key**    | Key for session detail popup (`Ctrl+<key>`)                      | D         |
 | **Git Key**       | Key for git operations popup (`Ctrl+<key>`)                      | G         |
+| **Compact Key**   | Key to toggle compact mode (`Ctrl+<key>`)                      | M         |
 | **Focus Key**     | Global shortcut to focus unitmux (`Cmd+Shift+<key>`)          | H         |
 
 ## Send Key

@@ -38,16 +38,9 @@ export function Sidebar(): React.JSX.Element {
   const [editingFocusKey, setEditingFocusKey] = useState(false)
   const [slashManagerOpen, setSlashManagerOpen] = useState(false)
   const [editingSlash, setEditingSlash] = useState<{ name: string; body: string } | null>(null)
-  const [newSlashName, setNewSlashName] = useState('')
-  const [newSlashBody, setNewSlashBody] = useState('')
-
   const slashCommands = useInputStore((s) => s.slashCommands)
   const setSlashCommands = useInputStore((s) => s.setSlashCommands)
   const skillCommands = useInputStore((s) => s.skillCommands)
-
-  const allCommandsCount =
-    slashCommands.length +
-    skillCommands.filter((sk) => !slashCommands.some((uc) => uc.name === sk.name)).length
 
   const toggleAlwaysOnTop = async (): Promise<void> => {
     const next = !alwaysOnTop
@@ -294,7 +287,7 @@ export function Sidebar(): React.JSX.Element {
         style={{ cursor: 'pointer' }}
         onClick={() => setSlashManagerOpen(!slashManagerOpen)}
       >
-        <span className="setting-label">Slash Commands ({allCommandsCount})</span>
+        <span className="setting-label">Slash Commands</span>
         <span className="slash-toggle-arrow">{slashManagerOpen ? '▾' : '▸'}</span>
       </div>
       {slashManagerOpen && (
@@ -376,37 +369,6 @@ export function Sidebar(): React.JSX.Element {
               )}
             </div>
           ))}
-          <div className="slash-add-form">
-            <input
-              className="slash-input"
-              value={newSlashName}
-              onChange={(e) => setNewSlashName(e.target.value)}
-              onKeyDown={(e) => e.stopPropagation()}
-              placeholder="/name"
-            />
-            <textarea
-              className="slash-body-input"
-              value={newSlashBody}
-              onChange={(e) => setNewSlashBody(e.target.value)}
-              onKeyDown={(e) => e.stopPropagation()}
-              placeholder="Command body..."
-              rows={2}
-            />
-            <button
-              className="slash-save-btn"
-              disabled={!newSlashName.trim() || !newSlashBody.trim()}
-              onClick={() => {
-                const name = newSlashName.trim().replace(/^\//, '')
-                if (!name || !newSlashBody.trim()) return
-                if (slashCommands.some((c) => c.name === name)) return
-                setSlashCommands([...slashCommands, { name, body: newSlashBody.trim() }])
-                setNewSlashName('')
-                setNewSlashBody('')
-              }}
-            >
-              Add
-            </button>
-          </div>
         </div>
       )}
     </div>

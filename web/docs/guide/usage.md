@@ -48,6 +48,18 @@ Press `Ctrl+D` to view details of the selected pane:
 
 Use `↑` / `↓` arrow keys in the textarea to navigate through previously sent inputs, just like a terminal.
 
+## Compact Mode
+
+Press `Ctrl+M` to toggle compact mode, which hides the input area and shows only the pane tags. The key is configurable in Settings.
+
+## New Session
+
+Press `Ctrl+N` to open the new session dialog. Select a tmux session and choose whether to start `claude` or `codex`.
+
 ## Global Focus
 
 Press `Cmd+Shift+H` to bring unitmux to the front from any app. The key is configurable in Settings.
+
+## Keyboard Shortcut Help
+
+Press `Ctrl+,` to open the built-in shortcut reference panel showing all available shortcuts.
