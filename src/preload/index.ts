@@ -43,8 +43,8 @@ const api = {
   listSkills: (cwd: string): Promise<{ user: SkillEntry[]; project: SkillEntry[] }> =>
     ipcRenderer.invoke('skills:list', cwd),
   listTmuxSessions: (): Promise<string[]> => ipcRenderer.invoke('tmux:list-tmux-sessions'),
-  createSession: (sessionName: string, command: 'claude' | 'codex'): Promise<SendResult> =>
-    ipcRenderer.invoke('tmux:create-session', { sessionName, command }),
+  createSession: (sessionName: string, command: 'claude' | 'codex', cwd?: string): Promise<SendResult> =>
+    ipcRenderer.invoke('tmux:create-session', { sessionName, command, cwd }),
   stopSession: (target: string): Promise<SendResult> =>
     ipcRenderer.invoke('tmux:stop-session', target),
   killPane: (target: string): Promise<SendResult> => ipcRenderer.invoke('tmux:kill-pane', target),

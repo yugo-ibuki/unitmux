@@ -9,6 +9,7 @@ export function CreateDialog(): React.JSX.Element | null {
   const setNewSessionTarget = useUiStore((s) => s.setNewSessionTarget)
   const newSessionCommand = useUiStore((s) => s.newSessionCommand)
   const setNewSessionCommand = useUiStore((s) => s.setNewSessionCommand)
+  const paneDetail = useUiStore((s) => s.paneDetail)
   const setPanes = usePaneStore((s) => s.setPanes)
 
   const closeDialog = (): void => {
@@ -81,7 +82,7 @@ export function CreateDialog(): React.JSX.Element | null {
             className="git-btn create-session-btn"
             disabled={!newSessionTarget}
             onClick={async () => {
-              const r = await window.api.createSession(newSessionTarget, newSessionCommand)
+              const r = await window.api.createSession(newSessionTarget, newSessionCommand, paneDetail?.cwd)
               if (r.success) {
                 setCreateDialog(false)
                 useUiStore

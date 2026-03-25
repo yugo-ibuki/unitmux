@@ -162,8 +162,8 @@ app.whenReady().then(() => {
     }
   })
 
-  ipcMain.handle('tmux:create-session', async (_event, { sessionName, command }) => {
-    return createSession(sessionName, command)
+  ipcMain.handle('tmux:create-session', async (_event, { sessionName, command, cwd }) => {
+    return createSession(sessionName, command, cwd)
   })
 
   ipcMain.handle('tmux:stop-session', async (_event, target: string) => {
