@@ -551,10 +551,14 @@ export async function listTmuxSessions(): Promise<string[]> {
 
 export async function createSession(
   sessionName: string,
-  command: 'claude' | 'codex'
+  command: 'claude' | 'codex',
+  cwd?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    await run(['new-window', '-a', '-t', sessionName, command])
+    const args = ['new-window', '-a', '-t', sessionName]
+    if (cwd) args.push('-c', cwd)
+    args.push(command)
+    await run(args)
     return { success: true }
   } catch (e) {
     return { success: false, error: String(e) }
