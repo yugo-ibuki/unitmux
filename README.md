@@ -78,6 +78,7 @@ When `claude` or `codex` presents numbered choices (e.g. "1. Yes / 2. No"), clic
 | `Ctrl+C`                    | Close session with confirmation (when detail panel is open)             |
 | `↑` / `↓`                   | Navigate input history                                                  |
 | `Cmd+Shift+H`               | Focus unitmux from any app (key configurable)                        |
+| `Cmd+Plus` / `Cmd+Minus`    | Increase / decrease font size                                           |
 | `Escape`                    | Close popup / refocus textarea                                          |
 
 Popups support vim-style navigation: `j`/`k` (scroll), `d`/`u` (half-page), `g`/`G` (top/bottom), `q` (close).
