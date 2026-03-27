@@ -26,6 +26,7 @@ interface InputAreaProps {
 
 export function InputArea({ textareaRef }: InputAreaProps): React.JSX.Element {
   const text = useInputStore((s) => s.text)
+  const terminalMode = useInputStore((s) => s.terminalMode)
   const slashFilter = useInputStore((s) => s.slashFilter)
   const slashIndex = useInputStore((s) => s.slashIndex)
   const slashCommands = useInputStore((s) => s.slashCommands)
@@ -60,12 +61,13 @@ export function InputArea({ textareaRef }: InputAreaProps): React.JSX.Element {
   )
 
   const send = useCallback(async () => {
-    const { text: currentText } = useInputStore.getState()
+    const { text: currentText, terminalMode } = useInputStore.getState()
     const { selected: currentSelected } = usePaneStore.getState()
     if (!currentSelected || !currentText.trim()) return
 
     const currentVimMode = useSettingsStore.getState().vimMode
-    const sent = currentText
+    // In terminal mode, prefix with ! so Claude treats it as a shell command
+    const sent = terminalMode ? `! ${currentText}` : currentText
     const result = await window.api.sendInput(currentSelected, sent, currentVimMode)
     if (result.success) {
       useInputStore.getState().pushHistory(sent)
@@ -194,11 +196,16 @@ export function InputArea({ textareaRef }: InputAreaProps): React.JSX.Element {
   return (
     <>
       <div className="textarea-wrapper">
+        {terminalMode && <div className="terminal-mode-badge">TERMINAL</div>}
         <textarea
           ref={textareaRef}
-          className="textarea"
+          className={`textarea${terminalMode ? ' terminal-mode' : ''}`}
           rows={5}
-          placeholder={`Type input to send... (${sendKey === 'cmd+enter' ? 'Cmd+Enter' : 'Enter'} to send)`}
+          placeholder={
+            terminalMode
+              ? `! command... (Ctrl+T to exit terminal mode)`
+              : `Type input to send... (${sendKey === 'cmd+enter' ? 'Cmd+Enter' : 'Enter'} to send)`
+          }
           value={text}
           onChange={handleTextChange}
           onKeyDown={handleKeyDown}

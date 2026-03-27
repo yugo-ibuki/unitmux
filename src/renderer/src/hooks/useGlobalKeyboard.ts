@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import type React from 'react'
+import { useInputStore } from '../stores/inputStore'
 import { usePaneStore } from '../stores/paneStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useUiStore } from '../stores/uiStore'
@@ -231,6 +232,17 @@ export function useGlobalKeyboard(
             useUiStore.getState().flashStatus(r.error ?? 'Failed', false)
           }
         })
+        return
+      }
+
+      // Ctrl+T → toggle terminal mode (prefix ! on send)
+      if (e.ctrlKey && e.key === 't' && !e.metaKey) {
+        e.preventDefault()
+        useInputStore.getState().toggleTerminalMode()
+        const nowOn = useInputStore.getState().terminalMode
+        useUiStore
+          .getState()
+          .flashStatus(nowOn ? 'Terminal mode ON' : 'Terminal mode OFF', true)
         return
       }
 

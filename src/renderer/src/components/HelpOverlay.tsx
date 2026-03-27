@@ -34,7 +34,8 @@ export function HelpOverlay(): React.JSX.Element | null {
         [sendKey === 'cmd+enter' ? 'Cmd+Enter' : 'Enter', 'Send input'],
         [sendKey === 'cmd+enter' ? 'Enter' : 'Shift+Enter', 'New line'],
         ['↑ / ↓', 'History navigation'],
-        ['/ + type', 'Slash command filter']
+        ['/ + type', 'Slash command filter'],
+        ['Ctrl+T', 'Toggle terminal mode (! prefix)']
       ]
     },
     {
