@@ -1,4 +1,4 @@
-import { app, BrowserWindow, globalShortcut, ipcMain } from 'electron'
+import { app, BrowserWindow, globalShortcut, ipcMain, Menu } from 'electron'
 import { join } from 'path'
 import { homedir } from 'os'
 import { readdir, readFile } from 'fs/promises'
@@ -13,7 +13,6 @@ import {
   gitPush,
   listTmuxSessions,
   createSession,
-  stopSession,
   killPane
 } from './tmux'
 
@@ -93,8 +92,10 @@ function stopStream(): void {
   lastStreamContent = ''
 }
 
+let mainWindow: BrowserWindow | null = null
+
 function createWindow(): void {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 700,
     height: 400,
     alwaysOnTop: true,
@@ -106,7 +107,7 @@ function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
+    mainWindow!.show()
   })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
@@ -118,6 +119,35 @@ function createWindow(): void {
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.unitmux')
+
+  // Custom menu: remove Cmd+H (Hide) accelerator to prevent conflict with Ctrl+Cmd+H
+  const menu = Menu.buildFromTemplate([
+    {
+      label: app.name,
+      submenu: [
+        { role: 'about' },
+        { type: 'separator' },
+        { role: 'hide', accelerator: '' },
+        { role: 'hideOthers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' }
+      ]
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'selectAll' }
+      ]
+    }
+  ])
+  Menu.setApplicationMenu(menu)
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
@@ -140,7 +170,7 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('tmux:start-stream', async (_event, target: string) => {
-    const win = BrowserWindow.getAllWindows()[0]
+    const win = mainWindow
     if (win) startStream(win, target)
     return true
   })
@@ -164,10 +194,6 @@ app.whenReady().then(() => {
 
   ipcMain.handle('tmux:create-session', async (_event, { sessionName, command, cwd }) => {
     return createSession(sessionName, command, cwd)
-  })
-
-  ipcMain.handle('tmux:stop-session', async (_event, target: string) => {
-    return stopSession(target)
   })
 
   ipcMain.handle('tmux:kill-pane', async (_event, target: string) => {
@@ -212,7 +238,7 @@ app.whenReady().then(() => {
   let isCompact = false
 
   const toggleCompact = (): boolean => {
-    const win = BrowserWindow.getAllWindows()[0]
+    const win = mainWindow
     if (!win) return isCompact
     if (!isCompact) {
       savedBounds = win.getBounds()
@@ -238,23 +264,13 @@ app.whenReady().then(() => {
     globalShortcut.unregisterAll()
     const accelerator = `CommandOrControl+Shift+${key.toUpperCase()}`
     return globalShortcut.register(accelerator, () => {
-      const win = BrowserWindow.getAllWindows()[0]
-      if (win) {
-        if (win.isFocused()) {
-          if (process.platform === 'darwin') {
-            // Hide app to activate the previous app, then immediately
-            // re-show the window without focus so it stays visible.
-            app.hide()
-            win.showInactive()
-          } else {
-            win.blur()
-          }
-        } else {
-          if (isCompact) toggleCompact()
-          win.show()
-          win.focus()
-          win.webContents.send('focus-textarea')
-        }
+      if (!mainWindow) return
+      if (mainWindow.isFocused()) {
+        mainWindow.blur()
+      } else {
+        mainWindow.focus()
+        mainWindow.webContents.send('focus-textarea')
+        if (isCompact) toggleCompact()
       }
     })
   }

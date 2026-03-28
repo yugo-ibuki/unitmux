@@ -12,7 +12,7 @@ export function useGlobalKeyboard(
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent): void => {
       const { panes, selected, setSelected } = usePaneStore.getState()
-      const { choiceModifier, vimMode, compactKey, previewKey, detailKey, gitKey, stopKey } =
+      const { choiceModifier, vimMode, compactKey, previewKey, detailKey, gitKey } =
         useSettingsStore.getState()
       const {
         paneContent,
@@ -28,9 +28,6 @@ export function useGlobalKeyboard(
         setConfirmKill,
         createDialog,
         setCreateDialog,
-        setTmuxSessions,
-        setNewSessionTarget,
-        setNewSessionCommand,
         setGitResult
       } = useUiStore.getState()
 
@@ -113,21 +110,7 @@ export function useGlobalKeyboard(
         return
       }
 
-      // Ctrl+[stopKey] → send Escape to stop the running session
-      if (e.ctrlKey && e.key === stopKey && !e.metaKey) {
-        e.preventDefault()
-        if (selected) {
-          window.api.stopSession(selected).then((result) => {
-            if (result.success) {
-              setStatus({ message: `Stopped → ${selected}`, ok: true })
-            } else {
-              setStatus({ message: result.error ?? 'Failed to stop', ok: false })
-            }
-            setTimeout(() => setStatus(null), 2000)
-          })
-        }
-        return
-      }
+
 
       // Ctrl+[previewKey] → 1st press: static capture, 2nd press: start streaming
       if (e.ctrlKey && e.key === previewKey && !e.metaKey) {
