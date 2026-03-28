@@ -724,6 +724,7 @@
   display: flex;
   align-items: center;
   -webkit-app-region: no-drag;
+  outline: none;
   justify-content: center;
   z-index: 100;
   animation: overlay-in 0.15s ease;
