@@ -25,6 +25,7 @@ export const PaneHeader = memo(function PaneHeader(): React.JSX.Element {
 
   return (
     <div className="header">
+      {shellMode && <div className="shell-mode-bar">SHELL</div>}
       <div className="tags">
         {panes.length === 0 && <span className="no-sessions">No sessions found</span>}
         {Object.entries(groups).map(([session, group]) => (
@@ -49,7 +50,6 @@ export const PaneHeader = memo(function PaneHeader(): React.JSX.Element {
                     {p.command === 'codex' ? 'CX' : 'CC'}
                   </span>
                   {p.target.split(':')[1]}
-                  {shellMode && <span className="shell-mode-badge">SHELL</span>}
                 </button>
                 {p.choices.length > 0 && (
                   <div className="inline-choices">

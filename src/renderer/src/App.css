@@ -85,6 +85,7 @@
 
 /* ── Header ── */
 .header {
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: 8px;
@@ -1486,15 +1487,17 @@
   text-align: right;
 }
 
-.shell-mode-badge {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 1px 5px;
+.shell-mode-bar {
+  position: absolute;
+  top: 14px;
+  left: 80px;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 8px;
   border-radius: 3px;
   background: var(--accent);
   color: var(--bg);
-  margin-left: 6px;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
 }
 
 .shell-input-line {
