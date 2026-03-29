@@ -80,6 +80,7 @@ export function InputArea({ textareaRef }: InputAreaProps): React.JSX.Element {
       const sendResult = await window.api.sendInput(result.target, currentText)
       if (sendResult.success) {
         useInputStore.getState().pushHistory(currentText)
+        useUiStore.getState().pushShellHistory(currentText)
         if (textareaRef.current) textareaRef.current.value = ''
         useInputStore.getState().setText('')
         useUiStore.getState().flashStatus('Sent to shell!', true)

@@ -1496,3 +1496,8 @@
   margin-left: 6px;
   letter-spacing: 0.5px;
 }
+
+.shell-input-line {
+  color: var(--accent);
+  font-weight: 600;
+}

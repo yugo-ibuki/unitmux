@@ -13,6 +13,8 @@ export function PreviewOverlay({
   const setPaneContent = useUiStore((s) => s.setPaneContent)
   const streaming = useUiStore((s) => s.streaming)
   const setStreaming = useUiStore((s) => s.setStreaming)
+  const shellMode = useUiStore((s) => s.shellMode)
+  const shellHistory = useUiStore((s) => s.shellHistory)
   const selected = usePaneStore((s) => s.selected)
   const previewKey = useSettingsStore((s) => s.previewKey)
 
@@ -94,6 +96,18 @@ export function PreviewOverlay({
         >
           {(() => {
             if (!paneContent) return null
+            if (shellMode && shellHistory.length > 0) {
+              const lines = paneContent.split('\n')
+              return lines.map((line, i) => {
+                const isInput = shellHistory.some((cmd) => line.includes(cmd))
+                return (
+                  <span key={i} className={isInput ? 'shell-input-line' : ''}>
+                    {line}
+                    {i < lines.length - 1 ? '\n' : ''}
+                  </span>
+                )
+              })
+            }
             const lastIdx = paneContent.lastIndexOf('\n⏺')
             if (lastIdx === -1) return paneContent
             const before = paneContent.slice(0, lastIdx + 1)

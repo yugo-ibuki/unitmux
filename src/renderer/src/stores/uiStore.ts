@@ -27,6 +27,7 @@ interface UiState {
   confirmKill: boolean
   helpOpen: boolean
   shellMode: boolean
+  shellHistory: string[]
 }
 
 interface UiActions {
@@ -46,6 +47,8 @@ interface UiActions {
   setHelpOpen: (value: boolean) => void
   setShellMode: (value: boolean) => void
   toggleShellMode: () => void
+  pushShellHistory: (cmd: string) => void
+  clearShellHistory: () => void
   flashStatus: (message: string, ok: boolean) => void
 }
 
@@ -65,6 +68,7 @@ export const useUiStore = create<UiState & UiActions>((set) => ({
   confirmKill: false,
   helpOpen: false,
   shellMode: false,
+  shellHistory: [],
 
   setSidebarOpen: (value) => set({ sidebarOpen: value }),
   setCompact: (value) => set({ compact: value }),
@@ -82,6 +86,8 @@ export const useUiStore = create<UiState & UiActions>((set) => ({
   setHelpOpen: (value) => set({ helpOpen: value }),
   setShellMode: (value) => set({ shellMode: value }),
   toggleShellMode: () => set((s) => ({ shellMode: !s.shellMode })),
+  pushShellHistory: (cmd) => set((s) => ({ shellHistory: [...s.shellHistory, cmd] })),
+  clearShellHistory: () => set({ shellHistory: [] }),
 
   flashStatus: (message, ok) => {
     set({ status: { message, ok } })
