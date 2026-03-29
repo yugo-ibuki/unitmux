@@ -52,6 +52,7 @@ export function HelpOverlay(): React.JSX.Element | null {
       shortcuts: [
         [`${mod}+1-9`, 'Send choice to pane'],
         [`Ctrl+${compactKey.toUpperCase()}`, 'Toggle compact mode'],
+        ['Ctrl+B', 'Toggle shell mode'],
         [`Cmd+Shift+${focusKey.toUpperCase()}`, 'Focus from any app']
       ]
     },

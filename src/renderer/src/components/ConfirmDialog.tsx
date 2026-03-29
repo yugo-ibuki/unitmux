@@ -13,6 +13,7 @@ export function ConfirmDialog(): React.JSX.Element | null {
   if (!confirmKill || !paneDetail) return null
 
   const doKill = async (): Promise<void> => {
+    const session = paneDetail.target.split(':')[0]
     const r = await window.api.killPane(paneDetail.target)
     setConfirmKill(false)
     setPaneDetail(null)
@@ -23,6 +24,13 @@ export function ConfirmDialog(): React.JSX.Element | null {
       setPanes(result)
       if (result.length > 0 && !result.find((p) => p.target === selected)) {
         setSelected(result[0].target)
+      }
+      // Clean up shell pane if no claude/codex panes remain in this session
+      const sessionHasPanes = result.some((p) => p.target.startsWith(session + ':'))
+      if (!sessionHasPanes) {
+        window.api.findShellPane(session).then((shellTarget) => {
+          if (shellTarget) window.api.killPane(shellTarget)
+        })
       }
     } else {
       useUiStore.getState().flashStatus(r.error ?? 'Failed', false)

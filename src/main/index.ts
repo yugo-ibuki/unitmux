@@ -13,7 +13,9 @@ import {
   gitPush,
   listTmuxSessions,
   createSession,
-  killPane
+  killPane,
+  findShellPane,
+  ensureShellPane
 } from './tmux'
 
 interface SkillEntry {
@@ -198,6 +200,14 @@ app.whenReady().then(() => {
 
   ipcMain.handle('tmux:kill-pane', async (_event, target: string) => {
     return killPane(target)
+  })
+
+  ipcMain.handle('tmux:find-shell-pane', async (_event, session: string) => {
+    return findShellPane(session)
+  })
+
+  ipcMain.handle('tmux:ensure-shell-pane', async (_event, { session, cwd }) => {
+    return ensureShellPane(session, cwd)
   })
 
   ipcMain.handle('skills:list', async (_event, cwd: string) => {

@@ -30,6 +30,7 @@ export function InputArea({ textareaRef }: InputAreaProps): React.JSX.Element {
   const slashCommands = useInputStore((s) => s.slashCommands)
   const skillCommands = useInputStore((s) => s.skillCommands)
   const sendKey = useSettingsStore((s) => s.sendKey)
+  const shellMode = useUiStore((s) => s.shellMode)
 
   const allCommands = useMemo(
     () => [
@@ -65,17 +66,39 @@ export function InputArea({ textareaRef }: InputAreaProps): React.JSX.Element {
     const { selected: currentSelected } = usePaneStore.getState()
     if (!currentSelected || !currentText.trim()) return
 
-    const currentVimMode = useSettingsStore.getState().vimMode
-    const result = await window.api.sendInput(currentSelected, currentText, currentVimMode)
-    if (result.success) {
-      useInputStore.getState().pushHistory(currentText)
-      if (textareaRef.current) textareaRef.current.value = ''
-      useInputStore.getState().setText('')
-      const firstLine = currentText.split('\n')[0].slice(0, 60)
-      usePaneStore.getState().updateLastPrompt(currentSelected, firstLine)
-      useUiStore.getState().flashStatus('Sent!', true)
+    const { shellMode: isShell } = useUiStore.getState()
+
+    if (isShell) {
+      const session = currentSelected.split(':')[0]
+      const detail = await window.api.getPaneDetail(currentSelected)
+      const cwd = detail?.cwd ?? ''
+      const result = await window.api.ensureShellPane(session, cwd)
+      if (!result.success || !result.target) {
+        useUiStore.getState().flashStatus(result.error ?? 'Failed to create shell pane', false)
+        return
+      }
+      const sendResult = await window.api.sendInput(result.target, currentText)
+      if (sendResult.success) {
+        useInputStore.getState().pushHistory(currentText)
+        if (textareaRef.current) textareaRef.current.value = ''
+        useInputStore.getState().setText('')
+        useUiStore.getState().flashStatus('Sent to shell!', true)
+      } else {
+        useUiStore.getState().flashStatus(sendResult.error ?? 'Failed', false)
+      }
     } else {
-      useUiStore.getState().flashStatus(result.error ?? 'Failed', false)
+      const currentVimMode = useSettingsStore.getState().vimMode
+      const result = await window.api.sendInput(currentSelected, currentText, currentVimMode)
+      if (result.success) {
+        useInputStore.getState().pushHistory(currentText)
+        if (textareaRef.current) textareaRef.current.value = ''
+        useInputStore.getState().setText('')
+        const firstLine = currentText.split('\n')[0].slice(0, 60)
+        usePaneStore.getState().updateLastPrompt(currentSelected, firstLine)
+        useUiStore.getState().flashStatus('Sent!', true)
+      } else {
+        useUiStore.getState().flashStatus(result.error ?? 'Failed', false)
+      }
     }
   }, [textareaRef])
 
@@ -205,7 +228,11 @@ export function InputArea({ textareaRef }: InputAreaProps): React.JSX.Element {
           ref={textareaRef}
           className="textarea"
           rows={5}
-          placeholder={`Type input to send... (${sendKey === 'cmd+enter' ? 'Cmd+Enter' : 'Enter'} to send)`}
+          placeholder={
+            shellMode
+              ? 'Type shell command... (Enter to send)'
+              : `Type input to send... (${sendKey === 'cmd+enter' ? 'Cmd+Enter' : 'Enter'} to send)`
+          }
           onChange={handleTextChange}
           onKeyDown={handleKeyDown}
         />

@@ -11,6 +11,7 @@ export const PaneHeader = memo(function PaneHeader(): React.JSX.Element {
   const vimMode = useSettingsStore((s) => s.vimMode)
   const sidebarOpen = useUiStore((s) => s.sidebarOpen)
   const setSidebarOpen = useUiStore((s) => s.setSidebarOpen)
+  const shellMode = useUiStore((s) => s.shellMode)
 
   const groups = useMemo(
     () =>
@@ -48,6 +49,7 @@ export const PaneHeader = memo(function PaneHeader(): React.JSX.Element {
                     {p.command === 'codex' ? 'CX' : 'CC'}
                   </span>
                   {p.target.split(':')[1]}
+                  {shellMode && <span className="shell-mode-badge">SHELL</span>}
                 </button>
                 {p.choices.length > 0 && (
                   <div className="inline-choices">
