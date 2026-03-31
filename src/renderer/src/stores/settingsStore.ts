@@ -140,6 +140,5 @@ export const useSettingsStore = create<SettingsState & SettingsActions>((set) =>
   setCompactKey: (value) => {
     saveSetting('compactKey', value)
     set({ compactKey: value })
-  },
-
+  }
 }))

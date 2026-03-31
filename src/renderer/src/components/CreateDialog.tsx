@@ -82,7 +82,11 @@ export function CreateDialog(): React.JSX.Element | null {
             className="git-btn create-session-btn"
             disabled={!newSessionTarget}
             onClick={async () => {
-              const r = await window.api.createSession(newSessionTarget, newSessionCommand, paneDetail?.cwd)
+              const r = await window.api.createSession(
+                newSessionTarget,
+                newSessionCommand,
+                paneDetail?.cwd
+              )
               if (r.success) {
                 setCreateDialog(false)
                 useUiStore

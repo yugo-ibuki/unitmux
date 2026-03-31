@@ -37,21 +37,13 @@ describe('parseChoices', () => {
   })
 
   it('ignores optional survey with (optional) marker', () => {
-    const content = [
-      'Some question (optional)',
-      '  1: Good    2: Bad   3: Fine'
-    ].join('\n')
+    const content = ['Some question (optional)', '  1: Good    2: Bad   3: Fine'].join('\n')
 
     expect(parseChoices(content)).toEqual([])
   })
 
   it('ignores survey choices with feedback labels in marker format', () => {
-    const content = [
-      'Rate this response',
-      ' ❯ 1. Bad',
-      '   2. Fine',
-      '   3. Good'
-    ].join('\n')
+    const content = ['Rate this response', ' ❯ 1. Bad', '   2. Fine', '   3. Good'].join('\n')
 
     expect(parseChoices(content)).toEqual([])
   })
@@ -101,7 +93,7 @@ describe('parseChoices', () => {
     const content = [
       'Do you want to proceed?',
       ' ❯ 1. Yes',
-      '   2. Yes, and don\'t ask again for: BASE=/some/path',
+      "   2. Yes, and don't ask again for: BASE=/some/path",
       '               RG=/opt/homebrew/bin/rg',
       '',
       ...commandLines,

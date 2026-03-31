@@ -4,41 +4,41 @@ Press `Ctrl+,` to open the built-in shortcut help inside the app.
 
 ## Navigation
 
-| Shortcut                     | Action                    |
-| ---------------------------- | ------------------------- |
-| `Ctrl+H` / `Cmd+↑`          | Previous pane             |
-| `Ctrl+L` / `Cmd+↓`          | Next pane                 |
-| `Ctrl+Cmd+H`                | Previous session          |
-| `Ctrl+Cmd+L`                | Next session              |
+| Shortcut           | Action           |
+| ------------------ | ---------------- |
+| `Ctrl+H` / `Cmd+↑` | Previous pane    |
+| `Ctrl+L` / `Cmd+↓` | Next pane        |
+| `Ctrl+Cmd+H`       | Previous session |
+| `Ctrl+Cmd+L`       | Next session     |
 
 Pane navigation wraps around — pressing next on the last pane selects the first, and vice versa. Session navigation wraps around in the same way.
 
 ## Input
 
-| Shortcut                     | Action                                                |
-| ---------------------------- | ----------------------------------------------------- |
-| `Cmd+Enter` or `Enter`       | Send input (configurable in Settings)                 |
-| `Enter` or `Shift+Enter`     | New line (depends on Send Key setting)                |
-| `↑` / `↓`                   | Navigate input history                                |
-| `/ + type`                   | Filter slash commands                                 |
+| Shortcut                 | Action                                 |
+| ------------------------ | -------------------------------------- |
+| `Cmd+Enter` or `Enter`   | Send input (configurable in Settings)  |
+| `Enter` or `Shift+Enter` | New line (depends on Send Key setting) |
+| `↑` / `↓`                | Navigate input history                 |
+| `/ + type`               | Filter slash commands                  |
 
 ## Panels
 
-| Shortcut                     | Action                                                |
-| ---------------------------- | ----------------------------------------------------- |
-| `Ctrl+P`                    | Open pane preview (press twice for live mode) (key configurable) |
-| `Ctrl+D`                    | Open session detail popup (key configurable)          |
-| `Ctrl+G`                    | Open git operations popup (key configurable)          |
-| `Ctrl+N`                    | Open new session dialog                               |
-| `Ctrl+,`                    | Open keyboard shortcut help                           |
+| Shortcut | Action                                                           |
+| -------- | ---------------------------------------------------------------- |
+| `Ctrl+P` | Open pane preview (press twice for live mode) (key configurable) |
+| `Ctrl+D` | Open session detail popup (key configurable)                     |
+| `Ctrl+G` | Open git operations popup (key configurable)                     |
+| `Ctrl+N` | Open new session dialog                                          |
+| `Ctrl+,` | Open keyboard shortcut help                                      |
 
 ## Actions
 
-| Shortcut                     | Action                                                |
-| ---------------------------- | ----------------------------------------------------- |
-| `Ctrl+1-9`                  | Send numbered choice directly (modifier configurable) |
-| `Ctrl+M`                    | Toggle compact mode (key configurable)                |
-| `Cmd+Shift+H`               | Focus unitmux from any app (key configurable)         |
+| Shortcut      | Action                                                |
+| ------------- | ----------------------------------------------------- |
+| `Ctrl+1-9`    | Send numbered choice directly (modifier configurable) |
+| `Ctrl+M`      | Toggle compact mode (key configurable)                |
+| `Cmd+Shift+H` | Focus unitmux from any app (key configurable)         |
 
 ## In Preview / Detail Panels
 
@@ -53,15 +53,15 @@ All overlay panels support vim-style navigation:
 
 ## In Git Panel
 
-| Shortcut   | Action                                 |
-| ---------- | -------------------------------------- |
-| `Ctrl+A`   | Stage all changes (git add -A)         |
-| `Ctrl+P`   | Push to remote                         |
-| `Enter`    | Commit (when message input is focused) |
+| Shortcut | Action                                 |
+| -------- | -------------------------------------- |
+| `Ctrl+A` | Stage all changes (git add -A)         |
+| `Ctrl+P` | Push to remote                         |
+| `Enter`  | Commit (when message input is focused) |
 
 ## General
 
-| Shortcut   | Action                          |
-| ---------- | ------------------------------- |
-| `Escape`   | Close current panel             |
-| `q`        | Close panel (in overlay panels) |
+| Shortcut | Action                          |
+| -------- | ------------------------------- |
+| `Escape` | Close current panel             |
+| `q`      | Close panel (in overlay panels) |

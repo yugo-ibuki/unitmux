@@ -91,8 +91,11 @@ export const useUiStore = create<UiState & UiActions>((set) => ({
 
   flashStatus: (message, ok) => {
     set({ status: { message, ok } })
-    setTimeout(() => {
-      set({ status: null })
-    }, ok ? 2000 : 5000)
+    setTimeout(
+      () => {
+        set({ status: null })
+      },
+      ok ? 2000 : 5000
+    )
   }
 }))

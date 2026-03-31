@@ -8,8 +8,6 @@ Unifies your AI coding sessions into a single floating interface.
 
 unitmux is a small always-on-top window that connects to all your AI coding assistants (`claude`, `codex`) running in tmux. Send commands, see status, and pick choices — all from one place, without switching terminals.
 
-
-
 ## Requirements
 
 - macOS
@@ -77,7 +75,7 @@ When `claude` or `codex` presents numbered choices (e.g. "1. Yes / 2. No"), clic
 | `/`                         | Open slash command autocomplete (when at start of input)                |
 | `Ctrl+C`                    | Close session with confirmation (when detail panel is open)             |
 | `↑` / `↓`                   | Navigate input history                                                  |
-| `Cmd+Shift+H`               | Focus unitmux from any app (key configurable)                        |
+| `Cmd+Shift+H`               | Focus unitmux from any app (key configurable)                           |
 | `Escape`                    | Close popup / refocus textarea                                          |
 
 Popups support vim-style navigation: `j`/`k` (scroll), `d`/`u` (half-page), `g`/`G` (top/bottom), `q` (close).
