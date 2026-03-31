@@ -62,9 +62,14 @@ export function InputArea({ textareaRef }: InputAreaProps): React.JSX.Element {
   )
 
   const send = useCallback(async () => {
-    const currentText = textareaRef.current?.value ?? ''
+    let currentText = textareaRef.current?.value ?? ''
     const { selected: currentSelected } = usePaneStore.getState()
     if (!currentSelected || !currentText.trim()) return
+
+    // Strip leading `/` from slash-like input (e.g. `/etc` → `etc`)
+    if (/^\/\S/.test(currentText)) {
+      currentText = currentText.slice(1)
+    }
 
     const { shellMode: isShell } = useUiStore.getState()
 
@@ -155,7 +160,18 @@ export function InputArea({ textareaRef }: InputAreaProps): React.JSX.Element {
             store.setSlashIndex((i) => (i - 1 + currentFiltered.length) % currentFiltered.length)
             return
           }
-          if (e.key === 'Enter' || e.key === 'Tab') {
+          // Send key combo bypasses slash selection and sends the text directly
+          if (e.key === 'Enter') {
+            const currentSendKey = useSettingsStore.getState().sendKey
+            const isSend = currentSendKey === 'cmd+enter' ? e.metaKey : !e.metaKey && !e.shiftKey
+            if (isSend) {
+              e.preventDefault()
+              store.setSlashFilter(null)
+              send()
+              return
+            }
+          }
+          if (e.key === 'Tab') {
             e.preventDefault()
             applySlashCommand(currentFiltered[currentSlashIndex])
             return
