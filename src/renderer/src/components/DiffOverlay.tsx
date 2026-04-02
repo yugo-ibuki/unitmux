@@ -1,38 +1,7 @@
 import { useRef } from 'react'
 import { useUiStore } from '../stores/uiStore'
-
-function renderDiffLines(diff: string): React.JSX.Element[] {
-  const elements: React.JSX.Element[] = []
-  const lines = diff.split('\n')
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
-    let className = ''
-    if (line.startsWith('+++') || line.startsWith('---')) {
-      className = 'diff-meta'
-    } else if (line.startsWith('@@')) {
-      className = 'diff-hunk'
-    } else if (line.startsWith('+')) {
-      className = 'diff-add'
-    } else if (line.startsWith('-')) {
-      className = 'diff-del'
-    } else if (line.startsWith('diff ')) {
-      className = 'diff-header'
-    } else if (
-      line.startsWith('index ') ||
-      line.startsWith('new file') ||
-      line.startsWith('deleted file')
-    ) {
-      className = 'diff-meta'
-    }
-    elements.push(
-      <span key={i} className={className}>
-        {line}
-        {i < lines.length - 1 ? '\n' : ''}
-      </span>
-    )
-  }
-  return elements
-}
+import { parseDiff } from '../utils/parseDiff'
+import { DiffFileSection } from './DiffFileSection'
 
 export function DiffOverlay(): React.JSX.Element | null {
   const diffContent = useUiStore((s) => s.diffContent)
@@ -40,7 +9,7 @@ export function DiffOverlay(): React.JSX.Element | null {
   const diffCwd = useUiStore((s) => s.diffCwd)
   const setDiffContent = useUiStore((s) => s.setDiffContent)
   const setDiffStaged = useUiStore((s) => s.setDiffStaged)
-  const contentRef = useRef<HTMLPreElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
 
   const closeDiff = (): void => {
     setDiffContent(null)
@@ -57,6 +26,8 @@ export function DiffOverlay(): React.JSX.Element | null {
   }
 
   if (diffContent === null) return null
+
+  const files = parseDiff(diffContent)
 
   return (
     <div
@@ -110,15 +81,22 @@ export function DiffOverlay(): React.JSX.Element | null {
     >
       <div className="pane-popup" onClick={(e) => e.stopPropagation()}>
         <div className="pane-popup-header">
-          <span className="pane-popup-title">Diff {diffStaged ? '(staged)' : '(unstaged)'}</span>
+          <span className="pane-popup-title">
+            Diff {diffStaged ? '(staged)' : '(unstaged)'}
+            <span className="diff-file-count">{files.length} files</span>
+          </span>
           <span className="pane-popup-hint">s toggle j/k d/u g/G q</span>
           <button className="pane-popup-close" onClick={closeDiff}>
             Esc
           </button>
         </div>
-        <pre ref={contentRef} className="pane-popup-content diff-content">
-          {renderDiffLines(diffContent)}
-        </pre>
+        <div ref={contentRef} className="pane-popup-content diff-content">
+          {files.length === 0 ? (
+            <div className="diff-empty">(no changes)</div>
+          ) : (
+            files.map((file, i) => <DiffFileSection key={i} file={file} />)
+          )}
+        </div>
       </div>
     </div>
   )
