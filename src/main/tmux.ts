@@ -1,5 +1,8 @@
 import { execFile } from 'child_process'
 import { existsSync } from 'fs'
+import { readFile, readdir } from 'fs/promises'
+import { homedir } from 'os'
+import { join } from 'path'
 
 export type PaneStatus = 'idle' | 'busy' | 'waiting'
 
@@ -40,6 +43,160 @@ async function isAlternateScreen(target: string): Promise<boolean> {
     return result.trim() === '1'
   } catch {
     return false
+  }
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant'
+  text: string
+  timestamp: string
+}
+
+const TOOL_ICONS: Record<string, string> = {
+  Read: '\u{1F4C4}',
+  Edit: '\u{270F}\u{FE0F}',
+  Write: '\u{1F4DD}',
+  Bash: '\u{1F4BB}',
+  Grep: '\u{1F50D}',
+  Glob: '\u{1F4C2}',
+  Agent: '\u{1F916}',
+  WebFetch: '\u{1F310}',
+  WebSearch: '\u{1F50E}',
+  TodoWrite: '\u{1F4CB}'
+}
+
+function encodeCwd(cwd: string): string {
+  return cwd.replace(/\//g, '-')
+}
+
+async function findSessionJsonl(target: string): Promise<string | null> {
+  try {
+    const info = await run([
+      'display-message',
+      '-t',
+      target,
+      '-p',
+      '#{pane_pid}|#{pane_current_path}'
+    ])
+    const [pid, cwd] = info.trim().split('|')
+
+    const claudeDir = join(homedir(), '.claude')
+    const sessionsDir = join(claudeDir, 'sessions')
+
+    // Try direct PID match
+    try {
+      const data = JSON.parse(await readFile(join(sessionsDir, `${pid}.json`), 'utf-8'))
+      const jsonlPath = join(claudeDir, 'projects', encodeCwd(data.cwd), `${data.sessionId}.jsonl`)
+      if (existsSync(jsonlPath)) return jsonlPath
+    } catch {
+      // PID doesn't match directly
+    }
+
+    // Scan session files for matching CWD, pick most recent
+    try {
+      const files = await readdir(sessionsDir)
+      let best: { path: string; startedAt: number } | null = null
+
+      for (const file of files) {
+        if (!file.endsWith('.json')) continue
+        try {
+          const data = JSON.parse(await readFile(join(sessionsDir, file), 'utf-8'))
+          if (data.cwd === cwd) {
+            const jsonlPath = join(
+              claudeDir,
+              'projects',
+              encodeCwd(data.cwd),
+              `${data.sessionId}.jsonl`
+            )
+            if (existsSync(jsonlPath) && (!best || data.startedAt > best.startedAt)) {
+              best = { path: jsonlPath, startedAt: data.startedAt }
+            }
+          }
+        } catch {
+          /* skip */
+        }
+      }
+      return best?.path ?? null
+    } catch {
+      return null
+    }
+  } catch {
+    return null
+  }
+}
+
+function formatToolUse(block: { name?: string; input?: Record<string, string> }): string {
+  const name = block.name ?? 'Tool'
+  const icon = TOOL_ICONS[name] ?? '\u{1F527}'
+  const input = block.input ?? {}
+
+  if ((name === 'Read' || name === 'Edit' || name === 'Write') && input.file_path) {
+    return `${icon} ${name} ${input.file_path.split('/').pop()}`
+  }
+  if (name === 'Bash' && input.command) {
+    return `${icon} ${input.command.slice(0, 60)}`
+  }
+  if (name === 'Grep' && input.pattern) {
+    return `${icon} Grep "${input.pattern.slice(0, 40)}"`
+  }
+  return `${icon} ${name}`
+}
+
+export async function getConversationLog(target: string): Promise<ChatMessage[]> {
+  const jsonlPath = await findSessionJsonl(target)
+  if (!jsonlPath) return []
+
+  try {
+    const raw = await readFile(jsonlPath, 'utf-8')
+    const messages: ChatMessage[] = []
+
+    for (const line of raw.split('\n')) {
+      if (!line.trim()) continue
+      try {
+        const record = JSON.parse(line)
+
+        if (record.type === 'user' && record.message?.role === 'user') {
+          const text =
+            typeof record.message.content === 'string' ? record.message.content.trim() : ''
+          if (text) {
+            messages.push({ role: 'user', text, timestamp: record.timestamp ?? '' })
+          }
+        } else if (record.type === 'assistant' && record.message?.role === 'assistant') {
+          const blocks = record.message.content
+          if (!Array.isArray(blocks)) continue
+
+          const parts: string[] = []
+          for (const block of blocks) {
+            if (block.type === 'text' && block.text?.trim()) {
+              parts.push(block.text.trim())
+            } else if (block.type === 'tool_use') {
+              parts.push(formatToolUse(block))
+            }
+          }
+
+          if (parts.length > 0) {
+            const last = messages[messages.length - 1]
+            if (last?.role === 'assistant') {
+              // Merge consecutive assistant messages (same turn)
+              last.text += '\n' + parts.join('\n')
+              last.timestamp = record.timestamp ?? last.timestamp
+            } else {
+              messages.push({
+                role: 'assistant',
+                text: parts.join('\n'),
+                timestamp: record.timestamp ?? ''
+              })
+            }
+          }
+        }
+      } catch {
+        /* skip malformed lines */
+      }
+    }
+
+    return messages
+  } catch {
+    return []
   }
 }
 
