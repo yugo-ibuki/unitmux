@@ -28,6 +28,9 @@ interface UiState {
   helpOpen: boolean
   shellMode: boolean
   shellHistory: string[]
+  diffContent: string | null
+  diffStaged: boolean
+  diffCwd: string
   chatMessages: ChatMessage[] | null
 }
 
@@ -52,6 +55,9 @@ interface UiActions {
   clearShellHistory: () => void
   setChatMessages: (value: ChatMessage[] | null) => void
   flashStatus: (message: string, ok: boolean) => void
+  setDiffContent: (value: string | null) => void
+  setDiffStaged: (value: boolean) => void
+  setDiffCwd: (value: string) => void
 }
 
 export const useUiStore = create<UiState & UiActions>((set) => ({
@@ -71,6 +77,9 @@ export const useUiStore = create<UiState & UiActions>((set) => ({
   helpOpen: false,
   shellMode: false,
   shellHistory: [],
+  diffContent: null,
+  diffStaged: false,
+  diffCwd: '',
   chatMessages: null,
 
   setSidebarOpen: (value) => set({ sidebarOpen: value }),
@@ -92,6 +101,10 @@ export const useUiStore = create<UiState & UiActions>((set) => ({
   pushShellHistory: (cmd) => set((s) => ({ shellHistory: [...s.shellHistory, cmd] })),
   clearShellHistory: () => set({ shellHistory: [] }),
   setChatMessages: (value) => set({ chatMessages: value }),
+
+  setDiffContent: (value) => set({ diffContent: value }),
+  setDiffStaged: (value) => set({ diffStaged: value }),
+  setDiffCwd: (value) => set({ diffCwd: value }),
 
   flashStatus: (message, ok) => {
     set({ status: { message, ok } })
