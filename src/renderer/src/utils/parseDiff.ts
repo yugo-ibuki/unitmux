@@ -61,6 +61,11 @@ export function parseDiff(raw: string): DiffFile[] {
       continue
     }
 
+    if (line.startsWith('Binary files')) {
+      current.lines.push({ type: 'hunk', content: line, oldNum: null, newNum: null })
+      continue
+    }
+
     // Added line
     if (line.startsWith('+')) {
       current.lines.push({
@@ -71,6 +76,10 @@ export function parseDiff(raw: string): DiffFile[] {
       })
       current.additions++
       newLine++
+      continue
+    }
+
+    if (line.startsWith('\\')) {
       continue
     }
 

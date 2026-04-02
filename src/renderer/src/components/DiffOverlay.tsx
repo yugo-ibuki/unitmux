@@ -27,7 +27,7 @@ export function DiffOverlay(): React.JSX.Element | null {
 
   if (diffContent === null) return null
 
-  const files = parseDiff(diffContent)
+  const files = diffContent && diffContent !== '(no changes)' ? parseDiff(diffContent) : []
 
   return (
     <div
@@ -41,7 +41,8 @@ export function DiffOverlay(): React.JSX.Element | null {
       }}
       onClick={closeDiff}
       onKeyDown={(e) => {
-        if ((e.target as HTMLElement).tagName === 'INPUT') return
+        const tag = (e.target as HTMLElement).tagName
+        if (tag === 'INPUT' || tag === 'BUTTON') return
         const el = contentRef.current
         if (!el) return
         const line = 16
