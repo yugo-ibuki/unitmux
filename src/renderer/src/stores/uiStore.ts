@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { PaneDetail } from '../types'
+import type { PaneDetail, ChatMessage } from '../types'
 
 interface StatusMessage {
   message: string
@@ -31,6 +31,7 @@ interface UiState {
   diffContent: string | null
   diffStaged: boolean
   diffCwd: string
+  chatMessages: ChatMessage[] | null
 }
 
 interface UiActions {
@@ -52,6 +53,7 @@ interface UiActions {
   toggleShellMode: () => void
   pushShellHistory: (cmd: string) => void
   clearShellHistory: () => void
+  setChatMessages: (value: ChatMessage[] | null) => void
   flashStatus: (message: string, ok: boolean) => void
   setDiffContent: (value: string | null) => void
   setDiffStaged: (value: boolean) => void
@@ -78,6 +80,7 @@ export const useUiStore = create<UiState & UiActions>((set) => ({
   diffContent: null,
   diffStaged: false,
   diffCwd: '',
+  chatMessages: null,
 
   setSidebarOpen: (value) => set({ sidebarOpen: value }),
   setCompact: (value) => set({ compact: value }),
@@ -97,6 +100,7 @@ export const useUiStore = create<UiState & UiActions>((set) => ({
   toggleShellMode: () => set((s) => ({ shellMode: !s.shellMode })),
   pushShellHistory: (cmd) => set((s) => ({ shellHistory: [...s.shellHistory, cmd] })),
   clearShellHistory: () => set({ shellHistory: [] }),
+  setChatMessages: (value) => set({ chatMessages: value }),
 
   setDiffContent: (value) => set({ diffContent: value }),
   setDiffStaged: (value) => set({ diffStaged: value }),
