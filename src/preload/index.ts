@@ -94,7 +94,8 @@ const api = {
     const handler = (_event: unknown, messages: ChatMessage[]): void => callback(messages)
     ipcRenderer.on('tmux:chat-data', handler)
     return () => ipcRenderer.removeListener('tmux:chat-data', handler)
-  }
+  },
+  selectImages: (): Promise<string[]> => ipcRenderer.invoke('dialog:open-image')
 }
 
 if (process.contextIsolated) {

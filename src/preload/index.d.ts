@@ -78,6 +78,7 @@ interface TmuxAPI {
   stopStream: () => Promise<boolean>
   onStreamData: (callback: (content: string) => void) => () => void
   onChatData: (callback: (messages: ChatMessage[]) => void) => () => void
+  selectImages: () => Promise<string[]>
 }
 
 declare global {

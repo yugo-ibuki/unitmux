@@ -1,4 +1,4 @@
-import { app, BrowserWindow, globalShortcut, ipcMain, Menu } from 'electron'
+import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu } from 'electron'
 import { join } from 'path'
 import { homedir } from 'os'
 import { readdir, readFile } from 'fs/promises'
@@ -183,6 +183,16 @@ app.whenReady().then(() => {
 
   ipcMain.handle('tmux:send-input', async (_event, { target, text, vimMode }) => {
     return sendInput(target, text, vimMode)
+  })
+
+  ipcMain.handle('dialog:open-image', async () => {
+    const win = BrowserWindow.getFocusedWindow()
+    if (!win) return []
+    const result = await dialog.showOpenDialog(win, {
+      properties: ['openFile', 'multiSelections'],
+      filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp'] }]
+    })
+    return result.canceled ? [] : result.filePaths
   })
 
   ipcMain.handle('tmux:capture-pane', async (_event, target: string) => {
