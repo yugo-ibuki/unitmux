@@ -121,7 +121,6 @@ export function InputArea({ textareaRef }: InputAreaProps): React.JSX.Element {
       if (result.success) {
         const historyText = images.length > 0 ? `${finalText} [+${images.length} images]` : finalText
         useInputStore.getState().pushHistory(historyText)
-        useUiStore.getState().appendUserMessage(finalText)
         if (textareaRef.current) textareaRef.current.value = ''
         useInputStore.getState().setText('')
         useInputStore.getState().clearImages()

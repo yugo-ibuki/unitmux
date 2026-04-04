@@ -36,51 +36,18 @@ function stripAnsi(text: string): string {
   return text.replace(RE_CSI, '').replace(RE_OSC, '').replace(RE_CHARSET, '').replace(RE_MODE, '')
 }
 
-// Detect if a pane is currently showing the alternate screen buffer
-// (i.e. Claude Code is running in FLICK / NO_FLICKER mode).
-async function isAlternateScreen(target: string): Promise<boolean> {
-  try {
-    const result = await run(['display-message', '-t', target, '-p', '#{alternate_on}'])
-    return result.trim() === '1'
-  } catch {
-    return false
-  }
-}
-
-export interface ChatMessage {
-  role: 'user' | 'assistant'
-  text: string
-  timestamp: string
-}
-
-const TOOL_ICONS: Record<string, string> = {
-  Read: '\u{1F4C4}',
-  Edit: '\u{270F}\u{FE0F}',
-  Write: '\u{1F4DD}',
-  Bash: '\u{1F4BB}',
-  Grep: '\u{1F50D}',
-  Glob: '\u{1F4C2}',
-  Agent: '\u{1F916}',
-  WebFetch: '\u{1F310}',
-  WebSearch: '\u{1F50E}',
-  TodoWrite: '\u{1F4CB}'
-}
+// ── JSONL conversation history (used to supplement raw capture) ──
 
 function encodeCwd(cwd: string): string {
   return cwd.replace(/[/.]/g, '-')
 }
 
-// Walk the process tree from a given PID to find descendant PIDs (up to maxDepth).
-// Used to locate the claude process running inside a tmux pane, since pane_pid
-// is the initial shell (e.g. fish) and claude runs as a grandchild.
 async function findDescendantPids(pid: string, maxDepth = 3): Promise<string[]> {
   const result: string[] = []
   const queue: { pid: string; depth: number }[] = [{ pid, depth: 0 }]
-
   while (queue.length > 0) {
     const item = queue.shift()!
     if (item.depth >= maxDepth) continue
-
     try {
       const output = await new Promise<string>((resolve, reject) => {
         execFile('pgrep', ['-P', item.pid], (err, stdout) => {
@@ -99,7 +66,6 @@ async function findDescendantPids(pid: string, maxDepth = 3): Promise<string[]> 
       // pgrep returns exit code 1 when no children found
     }
   }
-
   return result
 }
 
@@ -113,27 +79,21 @@ async function findSessionJsonl(target: string): Promise<string | null> {
       '#{pane_pid}|#{pane_current_path}'
     ])
     const [pid, cwd] = info.trim().split('|')
-
     const claudeDir = join(homedir(), '.claude')
     const sessionsDir = join(claudeDir, 'sessions')
 
-    // Helper: resolve a session file by PID to its JSONL path
     const resolveByPid = async (p: string): Promise<string | null> => {
       try {
         const data = JSON.parse(await readFile(join(sessionsDir, `${p}.json`), 'utf-8'))
-        const jsonlPath = join(claudeDir, 'projects', encodeCwd(data.cwd), `${data.sessionId}.jsonl`)
-        if (existsSync(jsonlPath)) return jsonlPath
+        return join(claudeDir, 'projects', encodeCwd(data.cwd), `${data.sessionId}.jsonl`)
       } catch {
-        // no session file for this PID
+        return null
       }
-      return null
     }
 
-    // 1. Try direct PID match (pane_pid itself)
     const direct = await resolveByPid(pid)
     if (direct) return direct
 
-    // 2. Walk descendant processes (shell → claude grandchild) and match
     try {
       const descendants = await findDescendantPids(pid)
       for (const childPid of descendants) {
@@ -144,22 +104,15 @@ async function findSessionJsonl(target: string): Promise<string | null> {
       // process tree walk failed
     }
 
-    // 3. Fallback: scan session files for matching CWD, pick most recent
     try {
       const files = await readdir(sessionsDir)
       let best: { path: string; startedAt: number } | null = null
-
       for (const file of files) {
         if (!file.endsWith('.json')) continue
         try {
           const data = JSON.parse(await readFile(join(sessionsDir, file), 'utf-8'))
           if (data.cwd === cwd) {
-            const jsonlPath = join(
-              claudeDir,
-              'projects',
-              encodeCwd(data.cwd),
-              `${data.sessionId}.jsonl`
-            )
+            const jsonlPath = join(claudeDir, 'projects', encodeCwd(data.cwd), `${data.sessionId}.jsonl`)
             if (existsSync(jsonlPath) && (!best || data.startedAt > best.startedAt)) {
               best = { path: jsonlPath, startedAt: data.startedAt }
             }
@@ -177,67 +130,32 @@ async function findSessionJsonl(target: string): Promise<string | null> {
   }
 }
 
-function formatToolUse(block: { name?: string; input?: Record<string, string> }): string {
-  const name = block.name ?? 'Tool'
-  const icon = TOOL_ICONS[name] ?? '\u{1F527}'
-  const input = block.input ?? {}
-
-  if ((name === 'Read' || name === 'Edit' || name === 'Write') && input.file_path) {
-    return `${icon} ${name} ${input.file_path.split('/').pop()}`
-  }
-  if (name === 'Bash' && input.command) {
-    return `${icon} ${input.command.slice(0, 60)}`
-  }
-  if (name === 'Grep' && input.pattern) {
-    return `${icon} Grep "${input.pattern.slice(0, 40)}"`
-  }
-  return `${icon} ${name}`
-}
-
-export async function getConversationLog(target: string): Promise<ChatMessage[]> {
+/**
+ * Read JSONL conversation log and return it as plain text.
+ * Used to supplement raw capture-pane output with scrollback history.
+ */
+export async function getConversationText(target: string): Promise<string> {
   const jsonlPath = await findSessionJsonl(target)
-  if (!jsonlPath) return []
+  if (!jsonlPath) return ''
 
   try {
     const raw = await readFile(jsonlPath, 'utf-8')
-    const messages: ChatMessage[] = []
+    const parts: string[] = []
 
     for (const line of raw.split('\n')) {
       if (!line.trim()) continue
       try {
         const record = JSON.parse(line)
-
         if (record.type === 'user' && record.message?.role === 'user') {
           const text =
             typeof record.message.content === 'string' ? record.message.content.trim() : ''
-          if (text) {
-            messages.push({ role: 'user', text, timestamp: record.timestamp ?? '' })
-          }
+          if (text) parts.push(`> ${text}`)
         } else if (record.type === 'assistant' && record.message?.role === 'assistant') {
           const blocks = record.message.content
           if (!Array.isArray(blocks)) continue
-
-          const parts: string[] = []
           for (const block of blocks) {
             if (block.type === 'text' && block.text?.trim()) {
               parts.push(block.text.trim())
-            } else if (block.type === 'tool_use') {
-              parts.push(formatToolUse(block))
-            }
-          }
-
-          if (parts.length > 0) {
-            const last = messages[messages.length - 1]
-            if (last?.role === 'assistant') {
-              // Merge consecutive assistant messages (same turn)
-              last.text += '\n' + parts.join('\n')
-              last.timestamp = record.timestamp ?? last.timestamp
-            } else {
-              messages.push({
-                role: 'assistant',
-                text: parts.join('\n'),
-                timestamp: record.timestamp ?? ''
-              })
             }
           }
         }
@@ -246,9 +164,9 @@ export async function getConversationLog(target: string): Promise<ChatMessage[]>
       }
     }
 
-    return messages
+    return parts.join('\n\n')
   } catch {
-    return []
+    return ''
   }
 }
 
@@ -878,7 +796,6 @@ export async function createSession(
   }
 }
 
-
 export async function killPane(target: string): Promise<{ success: boolean; error?: string }> {
   if (!TARGET_PATTERN.test(target)) {
     return { success: false, error: 'Invalid target format' }
@@ -931,13 +848,9 @@ function trimCliFooter(output: string): string {
 export async function capturePane(target: string): Promise<string> {
   if (!TARGET_PATTERN.test(target)) return ''
   try {
-    const altScreen = await isAlternateScreen(target)
-    // Alternate screen (FLICK / NO_FLICKER mode) has no scrollback history,
-    // so -S -500 is useless. Just capture the current visible screen.
-    const args = altScreen
-      ? ['capture-pane', '-t', target, '-p']
-      : ['capture-pane', '-t', target, '-p', '-S', '-500']
-    const output = await run(args)
+    // -S -500 is safe even on alternate screen; tmux silently returns only the
+    // visible screen in that case, so no branching is needed.
+    const output = await run(['capture-pane', '-t', target, '-p', '-S', '-500'])
     return trimCliFooter(stripAnsi(output))
   } catch {
     return ''
