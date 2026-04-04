@@ -5,6 +5,12 @@ export interface SkillEntry {
   description: string
 }
 
+export interface ChatMessage {
+  role: 'user' | 'assistant'
+  text: string
+  timestamp: string
+}
+
 export interface TmuxPane {
   target: string
   pid: string
@@ -54,6 +60,8 @@ const api = {
   gitCommit: (cwd: string, message: string): Promise<SendResult> =>
     ipcRenderer.invoke('git:commit', { cwd, message }),
   gitPush: (cwd: string): Promise<SendResult> => ipcRenderer.invoke('git:push', cwd),
+  gitDiff: (cwd: string, staged = false): Promise<string> =>
+    ipcRenderer.invoke('git:diff', { cwd, staged }),
   setAlwaysOnTop: (value: boolean): Promise<boolean> =>
     ipcRenderer.invoke('window:set-always-on-top', value),
   getAlwaysOnTop: (): Promise<boolean> => ipcRenderer.invoke('window:get-always-on-top'),
@@ -72,13 +80,20 @@ const api = {
     ipcRenderer.on('focus-textarea', handler)
     return () => ipcRenderer.removeListener('focus-textarea', handler)
   },
-  startStream: (target: string): Promise<boolean> =>
-    ipcRenderer.invoke('tmux:start-stream', target),
+  getConversationLog: (target: string): Promise<ChatMessage[]> =>
+    ipcRenderer.invoke('tmux:conversation-log', target),
+  startStream: (target: string, mode?: 'raw' | 'chat'): Promise<boolean> =>
+    ipcRenderer.invoke('tmux:start-stream', mode ? { target, mode } : target),
   stopStream: (): Promise<boolean> => ipcRenderer.invoke('tmux:stop-stream'),
   onStreamData: (callback: (content: string) => void): (() => void) => {
     const handler = (_event: unknown, content: string): void => callback(content)
     ipcRenderer.on('tmux:stream-data', handler)
     return () => ipcRenderer.removeListener('tmux:stream-data', handler)
+  },
+  onChatData: (callback: (messages: ChatMessage[]) => void): (() => void) => {
+    const handler = (_event: unknown, messages: ChatMessage[]): void => callback(messages)
+    ipcRenderer.on('tmux:chat-data', handler)
+    return () => ipcRenderer.removeListener('tmux:chat-data', handler)
   }
 }
 
