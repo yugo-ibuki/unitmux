@@ -55,6 +55,7 @@ interface TmuxAPI {
   capturePane: (target: string) => Promise<string>
   getPaneDetail: (target: string) => Promise<PaneDetail | null>
   gitAdd: (cwd: string) => Promise<SendResult>
+  gitAddFiles: (cwd: string, files: string[]) => Promise<SendResult>
   gitCommit: (cwd: string, message: string) => Promise<SendResult>
   gitPush: (cwd: string) => Promise<SendResult>
   gitDiff: (cwd: string, staged?: boolean) => Promise<string>
