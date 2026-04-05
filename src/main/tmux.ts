@@ -719,7 +719,7 @@ export async function getPaneDetail(target: string): Promise<PaneDetail | null> 
       cwd,
       tty: parts[8],
       gitBranch: gitBranch.trim(),
-      gitStatus: gitStatus.trim(),
+      gitStatus: gitStatus.trimEnd(),
       model,
       sessionId
     }

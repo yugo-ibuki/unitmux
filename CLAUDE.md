@@ -8,7 +8,7 @@ unitmux is a floating Electron desktop app that sends input to tmux sessions run
 
 - Electron 39 + React 19 + TypeScript 5.9
 - Build tooling: electron-vite + electron-builder
-- Current status: scaffold phase (v0.1.0) with functional tmux integration
+- Documentation site: VitePress (`web/docs/`)
 
 ## Commands
 
@@ -32,8 +32,8 @@ Three-process Electron architecture with context isolation:
 
 ```
 src/main/          → Electron main process (Node.js)
-  index.ts         → Window creation (400×300, always-on-top), IPC handler registration
-  tmux.ts          → tmux interaction: listPanes(), sendInput() with target validation
+  index.ts         → Window creation (700×400, always-on-top), IPC handler registration, custom protocol (local-image://)
+  tmux.ts          → tmux interaction: listPanes(), sendInput() with target validation, git operations, JSONL conversation log
 
 src/preload/       → Context bridge (secure IPC between main ↔ renderer)
   index.ts         → Exposes window.api (TmuxAPI) via contextBridge
@@ -41,19 +41,27 @@ src/preload/       → Context bridge (secure IPC between main ↔ renderer)
 
 src/renderer/src/  → React UI (browser environment)
   main.tsx         → React bootstrap
-  App.tsx          → Root component (pane selector, text input, send button)
+  App.tsx          → Root component with overlays and sidebar
+  components/      → InputArea, PaneHeader, GitOverlay, DiffOverlay, PreviewOverlay, CreateDialog, Sidebar, etc.
+  stores/          → Zustand stores (inputStore, uiStore, paneStore, settingsStore)
+  hooks/           → useGlobalKeyboard, useStreaming, etc.
   assets/          → CSS, SVG
 ```
 
 ### IPC Channels
 
 - `tmux:list-sessions` → Returns `TmuxPane[]` filtered to panes running `claude` or `codex` only
-- `tmux:send-input` → Sends text to a tmux pane by target (e.g., `session:0.0`), returns `SendResult`
+- `tmux:send-input` → Sends text + images to a tmux pane by target, returns `SendResult`
 - `tmux:ensure-shell-pane` → Creates/finds a `unitmux-shell` window in a session, returns target
+- `tmux:create-session` → Adds a new window to an existing tmux session
+- `tmux:create-new-session` → Creates a new tmux session with a given name
+- `dialog:open-image` → Opens file picker for images (temporarily disables alwaysOnTop)
+- `git:add` / `git:add-files` / `git:commit` / `git:push` / `git:diff` → Git operations
+- `image-dropped` → Main→renderer notification when images are dropped via drag & drop
 
 ### Key Types
 
-- `TmuxPane { target, pid, command, title }` — defined in main/tmux.ts, preload/index.ts, renderer App.tsx
+- `TmuxPane { target, pid, command, title, status, choices, prompt, activityLine }` — pane info with activity state
 - `SendResult { success, error? }` — defined in preload/index.ts
 
 ### Shell Pane Feature
@@ -66,11 +74,25 @@ src/renderer/src/  → React UI (browser environment)
 - Shell pane is auto-deleted when the session's last claude/codex pane is closed via ConfirmDialog
 - Preview (Ctrl+P) and streaming work for shell pane output when in shell mode
 
+### Image Attachment
+
+- Images attached via "+" button (file dialog) or drag & drop onto the window
+- Thumbnails displayed via `local-image://` custom protocol (bypasses file:// security restrictions)
+- Drag & drop handled in preload using `webUtils.getPathForFile()` (Electron 28+ with contextIsolation)
+- Images sent to Claude CLI as bracketed paste (`\x1b[200~`...`\x1b[201~`) so the CLI detects them as image file paths
+
+### Git Operations
+
+- `Ctrl+G` opens git overlay with vim-style file list (j/k navigate, Space to select, Enter to stage)
+- Individual file staging via `git add -- <files>` or bulk staging via `git add -A`
+- `Ctrl+F` opens diff viewer with staged/unstaged toggle and collapsible file sections
+
 ### UI Behavior
 
 - Pane list auto-refreshes every 5 seconds via polling
-- Cmd+Enter sends input from the textarea
+- Cmd+Enter sends input from the textarea (configurable)
 - First available pane is auto-selected on initial load
+- Status indicators: green (idle), yellow (waiting), gray (busy) with activity line display
 
 ### TypeScript Configuration
 

@@ -9,16 +9,21 @@ interface GitFile {
 
 function parseGitStatus(raw: string): GitFile[] {
   if (!raw) return []
+  // git status --short format: "XY path" where XY is 2 status chars + space + path
+  // Leading space may be trimmed, so match flexibly.
+  const LINE_RE = /^(.)(.) (.+)$/
   return raw
     .split('\n')
     .filter((l) => l.trim())
-    .map((line) => {
-      const x = line[0] // index (staged) status
-      const y = line[1] // worktree status
-      const path = line.slice(3)
+    .flatMap((line) => {
+      const m = line.match(LINE_RE)
+      if (!m) return []
+      const x = m[1] // index (staged) status
+      const y = m[2] // worktree status
+      const path = m[3]
       const staged = x !== ' ' && x !== '?'
       const status = staged ? x : y === '?' ? '??' : y
-      return { status, path, staged }
+      return [{ status, path, staged }]
     })
 }
 
