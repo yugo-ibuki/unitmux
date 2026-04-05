@@ -25,6 +25,9 @@ export default defineConfig({
         items: [
           { text: 'Getting Started', link: '/guide/getting-started' },
           { text: 'Usage', link: '/guide/usage' },
+          { text: 'Image Attachment', link: '/guide/images' },
+          { text: 'Shell Mode', link: '/guide/shell' },
+          { text: 'Slash Commands & Skills', link: '/guide/skills' },
           { text: 'Keyboard Shortcuts', link: '/guide/shortcuts' },
           { text: 'Settings', link: '/guide/settings' },
           { text: 'Git Operations', link: '/guide/git' }
