@@ -737,6 +737,18 @@ export async function gitAdd(cwd: string): Promise<{ success: boolean; error?: s
   }
 }
 
+export async function gitAddFiles(
+  cwd: string,
+  files: string[]
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await runGit(['-C', cwd, 'add', '--', ...files])
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: String(e) }
+  }
+}
+
 export async function gitCommit(
   cwd: string,
   message: string

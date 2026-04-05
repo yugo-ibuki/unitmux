@@ -9,6 +9,7 @@ import {
   capturePane,
   getPaneDetail,
   gitAdd,
+  gitAddFiles,
   gitCommit,
   gitPush,
   listTmuxSessions,
@@ -282,6 +283,7 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('git:add', async (_event, cwd: string) => gitAdd(cwd))
+  ipcMain.handle('git:add-files', async (_event, { cwd, files }) => gitAddFiles(cwd, files))
   ipcMain.handle('git:commit', async (_event, { cwd, message }) => gitCommit(cwd, message))
   ipcMain.handle('git:push', async (_event, cwd: string) => gitPush(cwd))
   ipcMain.handle('git:diff', async (_event, { cwd, staged }) => gitDiff(cwd, staged))
