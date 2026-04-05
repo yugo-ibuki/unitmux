@@ -1643,6 +1643,42 @@
   padding: 6px 20px;
 }
 
+.create-mode-tabs {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.create-mode-tab {
+  flex: 1;
+  padding: 5px 12px;
+  font-size: 9px;
+  font-weight: 500;
+  font-family: var(--font-mono);
+  background: transparent;
+  color: var(--text-dim);
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.create-mode-tab:hover {
+  background: var(--accent-muted);
+  color: var(--text);
+}
+
+.create-mode-tab-active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.create-mode-tab-active:hover {
+  background: var(--accent-hover);
+  color: #fff;
+}
+
 /* Detail panel kill button */
 .detail-actions {
   display: flex;

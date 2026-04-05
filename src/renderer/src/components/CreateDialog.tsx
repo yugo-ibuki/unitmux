@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useUiStore } from '../stores/uiStore'
 import { usePaneStore } from '../stores/paneStore'
 
+type Mode = 'new' | 'existing'
+
 export function CreateDialog(): React.JSX.Element | null {
   const createDialog = useUiStore((s) => s.createDialog)
   const setCreateDialog = useUiStore((s) => s.setCreateDialog)
@@ -13,8 +15,11 @@ export function CreateDialog(): React.JSX.Element | null {
   const paneDetail = useUiStore((s) => s.paneDetail)
   const setPanes = usePaneStore((s) => s.setPanes)
 
+  const [mode, setMode] = useState<Mode>('new')
+  const [sessionName, setSessionName] = useState('')
   const [highlightIndex, setHighlightIndex] = useState(0)
   const listRef = useRef<HTMLUListElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   // Sync highlightIndex when dialog opens or sessions change
   useEffect(() => {
@@ -29,22 +34,47 @@ export function CreateDialog(): React.JSX.Element | null {
     item?.scrollIntoView({ block: 'nearest' })
   }, [highlightIndex])
 
+  // Focus input when mode switches to 'new'
+  useEffect(() => {
+    if (mode === 'new') {
+      requestAnimationFrame(() => inputRef.current?.focus())
+    }
+  }, [mode])
+
   const closeDialog = (): void => {
     setCreateDialog(false)
+    setSessionName('')
+    setMode('new')
     requestAnimationFrame(() => {
       document.querySelector<HTMLTextAreaElement>('.textarea')?.focus()
     })
   }
 
-  const handleCreate = async (): Promise<void> => {
+  const handleCreateNew = async (): Promise<void> => {
+    const name = sessionName.trim()
+    if (!name) return
+    const r = await window.api.createNewSession(name, newSessionCommand, paneDetail?.cwd)
+    if (r.success) {
+      setCreateDialog(false)
+      setSessionName('')
+      useUiStore.getState().flashStatus(`Created session "${name}" with ${newSessionCommand}`, true)
+      const result = await window.api.listSessions()
+      setPanes(result)
+    } else {
+      useUiStore.getState().flashStatus(r.error ?? 'Failed', false)
+    }
+    requestAnimationFrame(() => {
+      document.querySelector<HTMLTextAreaElement>('.textarea')?.focus()
+    })
+  }
+
+  const handleAddToExisting = async (): Promise<void> => {
     const target = tmuxSessions[highlightIndex] ?? newSessionTarget
     if (!target) return
     const r = await window.api.createSession(target, newSessionCommand, paneDetail?.cwd)
     if (r.success) {
       setCreateDialog(false)
-      useUiStore
-        .getState()
-        .flashStatus(`Created ${newSessionCommand} in ${target}`, true)
+      useUiStore.getState().flashStatus(`Added ${newSessionCommand} to ${target}`, true)
       const result = await window.api.listSessions()
       setPanes(result)
     } else {
@@ -58,24 +88,30 @@ export function CreateDialog(): React.JSX.Element | null {
   if (!createDialog) return null
 
   const handleKeyDown = (e: React.KeyboardEvent): void => {
+    if ((e.target as HTMLElement).tagName === 'INPUT') return
+
     switch (e.key) {
       case 'j':
       case 'ArrowDown':
         e.preventDefault()
-        setHighlightIndex((i) => {
-          const next = Math.min(i + 1, tmuxSessions.length - 1)
-          setNewSessionTarget(tmuxSessions[next])
-          return next
-        })
+        if (mode === 'existing') {
+          setHighlightIndex((i) => {
+            const next = Math.min(i + 1, tmuxSessions.length - 1)
+            setNewSessionTarget(tmuxSessions[next])
+            return next
+          })
+        }
         break
       case 'k':
       case 'ArrowUp':
         e.preventDefault()
-        setHighlightIndex((i) => {
-          const next = Math.max(i - 1, 0)
-          setNewSessionTarget(tmuxSessions[next])
-          return next
-        })
+        if (mode === 'existing') {
+          setHighlightIndex((i) => {
+            const next = Math.max(i - 1, 0)
+            setNewSessionTarget(tmuxSessions[next])
+            return next
+          })
+        }
         break
       case 'h':
         e.preventDefault()
@@ -85,9 +121,14 @@ export function CreateDialog(): React.JSX.Element | null {
         e.preventDefault()
         setNewSessionCommand('codex')
         break
+      case 'Tab':
+        e.preventDefault()
+        setMode((m) => (m === 'new' ? 'existing' : 'new'))
+        break
       case 'Enter':
         e.preventDefault()
-        handleCreate()
+        if (mode === 'new') handleCreateNew()
+        else handleAddToExisting()
         break
       case 'Escape':
         e.preventDefault()
@@ -112,29 +153,68 @@ export function CreateDialog(): React.JSX.Element | null {
       <div className="pane-popup detail-popup" onClick={(e) => e.stopPropagation()}>
         <div className="pane-popup-header">
           <span className="pane-popup-title">New Session</span>
-          <span className="create-dialog-hint">j/k: select · h/l: cmd · Enter: create</span>
+          <span className="create-dialog-hint">Tab: switch · h/l: cmd · Enter: create</span>
           <button className="pane-popup-close" onClick={closeDialog}>
             Esc
           </button>
         </div>
         <div className="create-session-form">
-          <div className="setting-row">
-            <span className="setting-label">Session</span>
-            <ul className="create-session-list" ref={listRef}>
-              {tmuxSessions.map((s, i) => (
-                <li
-                  key={s}
-                  className={`create-session-item ${i === highlightIndex ? 'create-session-item-active' : ''}`}
-                  onClick={() => {
-                    setHighlightIndex(i)
-                    setNewSessionTarget(s)
-                  }}
-                >
-                  {s}
-                </li>
-              ))}
-            </ul>
+          {/* Mode tabs */}
+          <div className="create-mode-tabs">
+            <button
+              className={`create-mode-tab ${mode === 'new' ? 'create-mode-tab-active' : ''}`}
+              onClick={() => setMode('new')}
+            >
+              New Session
+            </button>
+            <button
+              className={`create-mode-tab ${mode === 'existing' ? 'create-mode-tab-active' : ''}`}
+              onClick={() => setMode('existing')}
+            >
+              Add to Existing
+            </button>
           </div>
+
+          {mode === 'new' ? (
+            <div className="setting-row">
+              <span className="setting-label">Name</span>
+              <input
+                ref={inputRef}
+                className="git-commit-input"
+                placeholder="Session name..."
+                value={sessionName}
+                onChange={(e) => setSessionName(e.target.value)}
+                onKeyDown={(e) => {
+                  e.stopPropagation()
+                  if (e.key === 'Enter' && sessionName.trim()) {
+                    handleCreateNew()
+                  }
+                  if (e.key === 'Escape') {
+                    closeDialog()
+                  }
+                }}
+              />
+            </div>
+          ) : (
+            <div className="setting-row">
+              <span className="setting-label">Session</span>
+              <ul className="create-session-list" ref={listRef}>
+                {tmuxSessions.map((s, i) => (
+                  <li
+                    key={s}
+                    className={`create-session-item ${i === highlightIndex ? 'create-session-item-active' : ''}`}
+                    onClick={() => {
+                      setHighlightIndex(i)
+                      setNewSessionTarget(s)
+                    }}
+                  >
+                    {s}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="setting-row">
             <span className="setting-label">Command</span>
             <div className="theme-segment">
@@ -154,10 +234,10 @@ export function CreateDialog(): React.JSX.Element | null {
           </div>
           <button
             className="git-btn create-session-btn"
-            disabled={!tmuxSessions[highlightIndex]}
-            onClick={handleCreate}
+            disabled={mode === 'new' ? !sessionName.trim() : !tmuxSessions[highlightIndex]}
+            onClick={mode === 'new' ? handleCreateNew : handleAddToExisting}
           >
-            Create
+            {mode === 'new' ? 'Create' : 'Add'}
           </button>
         </div>
       </div>

@@ -796,6 +796,22 @@ export async function createSession(
   }
 }
 
+export async function createNewTmuxSession(
+  sessionName: string,
+  command: 'claude' | 'codex',
+  cwd?: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const args = ['new-session', '-d', '-s', sessionName]
+    if (cwd) args.push('-c', cwd)
+    args.push(command)
+    await run(args)
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: String(e) }
+  }
+}
+
 export async function killPane(target: string): Promise<{ success: boolean; error?: string }> {
   if (!TARGET_PATTERN.test(target)) {
     return { success: false, error: 'Invalid target format' }

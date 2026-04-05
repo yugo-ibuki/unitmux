@@ -46,6 +46,8 @@ const api = {
   listTmuxSessions: (): Promise<string[]> => ipcRenderer.invoke('tmux:list-tmux-sessions'),
   createSession: (sessionName: string, command: 'claude' | 'codex', cwd?: string): Promise<SendResult> =>
     ipcRenderer.invoke('tmux:create-session', { sessionName, command, cwd }),
+  createNewSession: (sessionName: string, command: 'claude' | 'codex', cwd?: string): Promise<SendResult> =>
+    ipcRenderer.invoke('tmux:create-new-session', { sessionName, command, cwd }),
   killPane: (target: string): Promise<SendResult> => ipcRenderer.invoke('tmux:kill-pane', target),
   findShellPane: (session: string): Promise<string | null> =>
     ipcRenderer.invoke('tmux:find-shell-pane', session),
