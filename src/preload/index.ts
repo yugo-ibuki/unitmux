@@ -52,6 +52,8 @@ const api = {
   ensureShellPane: (session: string, cwd: string): Promise<{ success: boolean; target?: string; error?: string }> =>
     ipcRenderer.invoke('tmux:ensure-shell-pane', { session, cwd }),
   gitAdd: (cwd: string): Promise<SendResult> => ipcRenderer.invoke('git:add', cwd),
+  gitAddFiles: (cwd: string, files: string[]): Promise<SendResult> =>
+    ipcRenderer.invoke('git:add-files', { cwd, files }),
   gitCommit: (cwd: string, message: string): Promise<SendResult> =>
     ipcRenderer.invoke('git:commit', { cwd, message }),
   gitPush: (cwd: string): Promise<SendResult> => ipcRenderer.invoke('git:push', cwd),

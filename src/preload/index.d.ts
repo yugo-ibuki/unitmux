@@ -57,6 +57,7 @@ interface TmuxAPI {
   createSession: (sessionName: string, command: 'claude' | 'codex', cwd?: string) => Promise<SendResult>
   killPane: (target: string) => Promise<SendResult>
   gitAdd: (cwd: string) => Promise<SendResult>
+  gitAddFiles: (cwd: string, files: string[]) => Promise<SendResult>
   gitCommit: (cwd: string, message: string) => Promise<SendResult>
   gitPush: (cwd: string) => Promise<SendResult>
   gitDiff: (cwd: string, staged?: boolean) => Promise<string>
