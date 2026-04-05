@@ -75,7 +75,7 @@ Click the "+" button or drag & drop images onto the window to attach them.
 
 - Supported formats: PNG, JPG, GIF, WebP, SVG, BMP
 - Images show as thumbnails before sending, with a remove button on hover
-- Images are sent to Claude CLI using bracketed paste protocol so the CLI recognizes them as image files
+- Images are sent to Claude CLI so the CLI recognizes them as image files
 
 ## Shell Mode
 
