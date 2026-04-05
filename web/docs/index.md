@@ -32,4 +32,13 @@ features:
   - icon: 🛠️
     title: Built-in Git
     details: Stage, commit, and push without leaving the app. Press Ctrl+G to open git operations for the selected pane's working directory.
+  - icon: 🖼️
+    title: Image Attachment
+    details: Attach images to your messages via button or drag & drop. Images are sent to Claude CLI through bracketed paste.
+  - icon: 🐚
+    title: Shell Mode
+    details: Toggle shell mode (Ctrl+B) to send commands to a dedicated shell pane alongside your AI session.
+  - icon: ⚡
+    title: Skill Commands
+    details: Skill files from ~/.claude/skills are loaded as slash commands alongside custom slash commands.
 ---

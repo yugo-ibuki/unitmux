@@ -1983,6 +1983,12 @@
   background: var(--bg-hover);
 }
 
+.diff-file-focused > .diff-file-header {
+  background: var(--bg-hover);
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
 .diff-file-chevron {
   font-size: 9px;
   color: var(--text-dim);

@@ -1,32 +1,35 @@
 # Git Operations
 
-Press `Ctrl+G` to open the git operations popup for the selected pane's working directory.
+Press `Ctrl+G` to open the git popup for the selected pane's working directory. The popup shows a file list with individual file staging using vim-style navigation.
 
-## Available Actions
+## File List Navigation
 
-| Action      | Description                      | Shortcut         |
-| ----------- | -------------------------------- | ---------------- |
-| **Add All** | Stage all changes (`git add -A`) | `Ctrl+A`         |
-| **Commit**  | Commit with a message            | `Enter` in input |
-| **Push**    | Push to remote                   | `Ctrl+P`         |
+| Key      | Action                      |
+| -------- | --------------------------- |
+| `j`/`k`  | Move cursor up/down         |
+| `Space`  | Toggle file selection       |
+| `a`      | Select/deselect all files   |
+| `g`/`G`  | Jump to top/bottom          |
+| `Enter`  | Stage selected files        |
+| `Ctrl+A` | Stage all files (git add -A)|
+| `Ctrl+P` | Push to remote              |
+| `q`/`Esc`| Close                       |
 
-## How It Works
+## File Status Colors
 
-The popup shows:
+- Yellow (M) — modified
+- Green (A) — added
+- Red (D) — deleted
+- Blue (R) — renamed
+- Dim (??) — untracked
 
-1. **Current branch** in the header
-2. **Git status** (short format) showing changed files
-3. **Action buttons** for add, commit, and push
-
-### Workflow
+## Workflow
 
 1. Press `Ctrl+G` to open
-2. Review the git status
-3. Click **Add All** (or `Ctrl+A`) to stage changes
+2. Navigate with `j`/`k`, select files with `Space`
+3. Press `Enter` to stage selected files, or `Ctrl+A` to stage all
 4. Type a commit message and press `Enter`
-5. Click **Push** (or `Ctrl+P`) to push
-
-The git status refreshes automatically after each operation.
+5. Press `Ctrl+P` to push
 
 ## Requirements
 

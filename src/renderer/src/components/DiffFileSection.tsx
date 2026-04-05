@@ -1,15 +1,28 @@
-import { useState } from 'react'
 import type { DiffFile } from '../utils/parseDiff'
 
-const COLLAPSE_THRESHOLD = 50
+export const COLLAPSE_THRESHOLD = 50
 
-export function DiffFileSection({ file }: { file: DiffFile }): React.JSX.Element {
-  const totalChanged = file.additions + file.deletions
-  const [open, setOpen] = useState(totalChanged < COLLAPSE_THRESHOLD)
+export function DiffFileSection({
+  file,
+  open,
+  onToggle,
+  focused,
+  fileIndex
+}: {
+  file: DiffFile
+  open: boolean
+  onToggle: () => void
+  focused: boolean
+  fileIndex: number
+}): React.JSX.Element {
+  let hunkCounter = 0
 
   return (
-    <div className="diff-file-section">
-      <button className="diff-file-header" onClick={() => setOpen(!open)}>
+    <div
+      className={'diff-file-section' + (focused ? ' diff-file-focused' : '')}
+      data-file-index={fileIndex}
+    >
+      <button className="diff-file-header" onClick={onToggle}>
         <span className="diff-file-chevron">{open ? '▼' : '▶'}</span>
         <span className="diff-file-path">{file.path}</span>
         <span className="diff-file-stats">
@@ -22,8 +35,9 @@ export function DiffFileSection({ file }: { file: DiffFile }): React.JSX.Element
           <tbody>
             {file.lines.map((line, i) => {
               if (line.type === 'hunk') {
+                const hunkId = `${fileIndex}-${hunkCounter++}`
                 return (
-                  <tr key={i} className="diff-line diff-line-hunk">
+                  <tr key={i} className="diff-line diff-line-hunk" data-hunk-id={hunkId}>
                     <td className="diff-ln" />
                     <td className="diff-ln" />
                     <td className="diff-line-content">{line.content}</td>

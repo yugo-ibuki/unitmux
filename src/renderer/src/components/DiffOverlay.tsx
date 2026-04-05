@@ -1,7 +1,7 @@
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useUiStore } from '../stores/uiStore'
 import { parseDiff } from '../utils/parseDiff'
-import { DiffFileSection } from './DiffFileSection'
+import { COLLAPSE_THRESHOLD, DiffFileSection } from './DiffFileSection'
 
 export function DiffOverlay(): React.JSX.Element | null {
   const diffContent = useUiStore((s) => s.diffContent)
@@ -10,6 +10,48 @@ export function DiffOverlay(): React.JSX.Element | null {
   const setDiffContent = useUiStore((s) => s.setDiffContent)
   const setDiffStaged = useUiStore((s) => s.setDiffStaged)
   const contentRef = useRef<HTMLDivElement>(null)
+
+  const [openFiles, setOpenFiles] = useState<Record<number, boolean>>({})
+  const [focusedFile, setFocusedFile] = useState(-1)
+  const [pendingKey, setPendingKey] = useState<string | null>(null)
+  const hunkIndexRef = useRef(-1)
+  const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const files =
+    diffContent && diffContent !== '(no changes)' ? parseDiff(diffContent) : []
+
+  // Reset state when diff content changes
+  useEffect(() => {
+    setFocusedFile(-1)
+    hunkIndexRef.current = -1
+    setOpenFiles({})
+    setPendingKey(null)
+  }, [diffContent])
+
+  const isFileOpen = (i: number): boolean =>
+    openFiles[i] ?? files[i].additions + files[i].deletions < COLLAPSE_THRESHOLD
+
+  const toggleFile = (i: number): void => {
+    setOpenFiles((prev) => ({ ...prev, [i]: !isFileOpen(i) }))
+  }
+
+  const scrollToFile = (index: number): void => {
+    const el = contentRef.current?.querySelector(`[data-file-index="${index}"]`)
+    el?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  }
+
+  const jumpToHunk = (direction: 'next' | 'prev'): void => {
+    const hunks = contentRef.current?.querySelectorAll('[data-hunk-id]')
+    if (!hunks || hunks.length === 0) return
+
+    if (direction === 'next') {
+      hunkIndexRef.current = Math.min(hunkIndexRef.current + 1, hunks.length - 1)
+    } else {
+      hunkIndexRef.current = Math.max(hunkIndexRef.current - 1, 0)
+    }
+
+    hunks[hunkIndexRef.current]?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  }
 
   const closeDiff = (): void => {
     setDiffContent(null)
@@ -27,8 +69,6 @@ export function DiffOverlay(): React.JSX.Element | null {
 
   if (diffContent === null) return null
 
-  const files = diffContent && diffContent !== '(no changes)' ? parseDiff(diffContent) : []
-
   return (
     <div
       className="pane-overlay"
@@ -45,6 +85,33 @@ export function DiffOverlay(): React.JSX.Element | null {
         if (tag === 'INPUT' || tag === 'BUTTON') return
         const el = contentRef.current
         if (!el) return
+
+        // Handle two-key sequences (]c / [c)
+        if (pendingKey) {
+          const combo = pendingKey + e.key
+          setPendingKey(null)
+          if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current)
+          if (combo === ']c') {
+            jumpToHunk('next')
+            e.preventDefault()
+            return
+          }
+          if (combo === '[c') {
+            jumpToHunk('prev')
+            e.preventDefault()
+            return
+          }
+          // Not a valid combo, fall through to normal handling
+        }
+
+        if (e.key === ']' || e.key === '[') {
+          setPendingKey(e.key)
+          if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current)
+          pendingTimerRef.current = setTimeout(() => setPendingKey(null), 500)
+          e.preventDefault()
+          return
+        }
+
         const line = 16
         const half = el.clientHeight / 2
         switch (e.key) {
@@ -66,6 +133,26 @@ export function DiffOverlay(): React.JSX.Element | null {
           case 'G':
             el.scrollTo(0, el.scrollHeight)
             break
+          case 'n':
+            if (files.length > 0) {
+              const next = Math.min(focusedFile + 1, files.length - 1)
+              setFocusedFile(next)
+              scrollToFile(next)
+            }
+            break
+          case 'N':
+            if (files.length > 0) {
+              const prev = Math.max(focusedFile - 1, 0)
+              setFocusedFile(prev)
+              scrollToFile(prev)
+            }
+            break
+          case 'Enter':
+          case 'o':
+            if (focusedFile >= 0 && focusedFile < files.length) {
+              toggleFile(focusedFile)
+            }
+            break
           case 's':
             e.preventDefault()
             toggleStaged()
@@ -86,7 +173,7 @@ export function DiffOverlay(): React.JSX.Element | null {
             Diff {diffStaged ? '(staged)' : '(unstaged)'}
             <span className="diff-file-count">{files.length} files</span>
           </span>
-          <span className="pane-popup-hint">s toggle j/k d/u g/G q</span>
+          <span className="pane-popup-hint">n/N file j/k d/u g/G ]c [c o s q</span>
           <button className="pane-popup-close" onClick={closeDiff}>
             Esc
           </button>
@@ -95,7 +182,16 @@ export function DiffOverlay(): React.JSX.Element | null {
           {files.length === 0 ? (
             <div className="diff-empty">(no changes)</div>
           ) : (
-            files.map((file, i) => <DiffFileSection key={i} file={file} />)
+            files.map((file, i) => (
+              <DiffFileSection
+                key={i}
+                file={file}
+                open={isFileOpen(i)}
+                onToggle={() => toggleFile(i)}
+                focused={i === focusedFile}
+                fileIndex={i}
+              />
+            ))
           )}
         </div>
       </div>

@@ -38,6 +38,8 @@ Pane navigation wraps around — pressing next on the last pane selects the firs
 | ---------------------------- | ----------------------------------------------------- |
 | `Ctrl+1-9`                  | Send numbered choice directly (modifier configurable) |
 | `Ctrl+M`                    | Toggle compact mode (key configurable)                |
+| `Ctrl+B`                    | Toggle shell mode                                     |
+| `Ctrl+S`                    | Send interrupt (Escape) to pane                       |
 | `Cmd+Shift+H`               | Focus unitmux from any app (key configurable)         |
 
 ## In Preview / Detail Panels
@@ -53,11 +55,23 @@ All overlay panels support vim-style navigation:
 
 ## In Git Panel
 
-| Shortcut   | Action                                 |
+| Key        | Action                                 |
 | ---------- | -------------------------------------- |
-| `Ctrl+A`   | Stage all changes (git add -A)         |
+| `j`/`k`    | Move cursor                            |
+| `Space`    | Toggle file selection                  |
+| `a`        | Select/deselect all                    |
+| `Enter`    | Stage selected files                   |
+| `Ctrl+A`   | Stage all (git add -A)                 |
 | `Ctrl+P`   | Push to remote                         |
-| `Enter`    | Commit (when message input is focused) |
+
+## In New Session Dialog
+
+| Key        | Action                                 |
+| ---------- | -------------------------------------- |
+| `Tab`      | Switch New/Existing mode               |
+| `h`/`l`    | Toggle claude/codex                    |
+| `j`/`k`    | Navigate session list (Existing mode)  |
+| `Enter`    | Create                                 |
 
 ## General
 
