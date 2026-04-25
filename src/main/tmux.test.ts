@@ -1,8 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { _testInternals } from './tmux'
 
-const { parseChoices, detectStatus, detectStatusClaude, detectStatusCodex, trimCliFooter } =
-  _testInternals
+const {
+  parseChoices,
+  detectStatus,
+  detectStatusClaude,
+  detectStatusCodex,
+  resolveCodexChoiceInput,
+  trimCliFooter
+} = _testInternals
 
 describe('parseChoices', () => {
   it('detects marker-style choices (❯ 1. Yes / 2. No)', () => {
@@ -334,6 +340,36 @@ describe('detectStatus', () => {
 
     expect(result.status).toBe('waiting')
     expect(result.choices.map((choice) => choice.number)).toEqual(['1', '2', '3'])
+  })
+})
+
+describe('resolveCodexChoiceInput', () => {
+  it('maps Codex approval menu numbers to their shortcut keys without submitting Enter', () => {
+    const choices = [
+      { number: '1', label: 'Yes, proceed (y)' },
+      {
+        number: '2',
+        label: "Yes, and don't ask again for commands that start with `gh auth status` (p)"
+      },
+      { number: '3', label: 'No, and tell Codex what to do differently (esc)' }
+    ]
+
+    expect(resolveCodexChoiceInput('1', choices)).toEqual({ text: 'y', submit: false })
+    expect(resolveCodexChoiceInput('2', choices)).toEqual({ text: 'p', submit: false })
+    expect(resolveCodexChoiceInput('3', choices)).toEqual({
+      text: '',
+      submit: false,
+      key: 'Escape'
+    })
+  })
+
+  it('keeps ordinary Codex numbered choices as text that should be submitted', () => {
+    const choices = [
+      { number: '1', label: '左ペインはファイル一覧だけ' },
+      { number: '2', label: 'ディレクトリツリー風に折りたたむ' }
+    ]
+
+    expect(resolveCodexChoiceInput('1', choices)).toEqual({ text: '1', submit: true })
   })
 })
 

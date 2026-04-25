@@ -593,6 +593,20 @@ function detectStatus(
   return detectStatusClaude(title, content)
 }
 
+function resolveCodexChoiceInput(
+  text: string,
+  choices: TmuxChoice[]
+): { text: string; submit: boolean; key?: 'Escape' } {
+  const choice = choices.find((c) => c.number === text)
+  if (!choice) return { text, submit: true }
+
+  const shortcut = choice.label.match(/\((y|p|esc)\)\s*$/i)?.[1]?.toLowerCase()
+  if (shortcut === 'esc') return { text: '', submit: false, key: 'Escape' }
+  if (shortcut === 'y' || shortcut === 'p') return { text: shortcut, submit: false }
+
+  return { text, submit: true }
+}
+
 export async function listPanes(): Promise<TmuxPane[]> {
   const format =
     '#{session_name}:#{window_index}.#{pane_index}|#{pane_pid}|#{pane_current_command}|#{pane_title}'
@@ -687,7 +701,7 @@ export async function sendInput(
       '#{pane_title}|#{pane_current_command}'
     ])
     const [title, command] = titleAndCmd.trim().split('|')
-    const { status } = detectStatus(title, content, command)
+    const { status, choices } = detectStatus(title, content, command)
     const isChoiceResponse = status === 'waiting' && /^[1-9]$/.test(text)
 
     // Only send Escape+i when Claude CLI is in vim input mode.
@@ -712,10 +726,17 @@ export async function sendInput(
     const hasNewlines = text.includes('\n')
 
     if (isCodex) {
+      const resolved = isChoiceResponse
+        ? resolveCodexChoiceInput(text, choices)
+        : { text, submit: true }
       // Codex ignores Enter from external tmux clients. Use run-shell
       // to execute send-keys from within the tmux server process itself.
-      if (text) await run(['send-keys', '-t', target, '-l', text])
-      await run(['run-shell', `${tmuxBin} send-keys -t ${target} Enter`])
+      if (resolved.key) {
+        await run(['send-keys', '-t', target, resolved.key])
+      } else if (resolved.text) {
+        await run(['send-keys', '-t', target, '-l', resolved.text])
+      }
+      if (resolved.submit) await run(['run-shell', `${tmuxBin} send-keys -t ${target} Enter`])
     } else if (hasNewlines) {
       // Send bracketed paste escape sequences to preserve newlines
       const trimmed = text.replace(/\n+$/, '')
@@ -1001,6 +1022,7 @@ export const _testInternals = {
   detectStatus,
   detectStatusClaude,
   detectStatusCodex,
+  resolveCodexChoiceInput,
   trimCliFooter,
   stripAnsi
 }

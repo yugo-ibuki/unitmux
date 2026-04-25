@@ -2002,6 +2002,15 @@
   color: var(--text);
 }
 
+.diff-sidebar-row-directory {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.diff-sidebar-row-file {
+  font-weight: 500;
+}
+
 .diff-sidebar-status {
   width: 10px;
   flex-shrink: 0;

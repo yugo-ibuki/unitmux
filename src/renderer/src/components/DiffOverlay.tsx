@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useUiStore } from '../stores/uiStore'
-import { COLLAPSE_THRESHOLD, getDiffSidebarItems } from '../utils/diffSidebar'
+import { COLLAPSE_THRESHOLD, getVisibleDiffSidebarRows } from '../utils/diffSidebar'
 import { parseDiff } from '../utils/parseDiff'
 import { DiffFileSection } from './DiffFileSection'
 
@@ -41,13 +41,16 @@ function DiffOverlayContent({
   const contentRef = useRef<HTMLDivElement>(null)
 
   const [openFiles, setOpenFiles] = useState<Record<number, boolean>>({})
+  const [openDirectories, setOpenDirectories] = useState<Record<string, boolean>>({})
   const [focusedFile, setFocusedFile] = useState(-1)
+  const [focusedSidebarRow, setFocusedSidebarRow] = useState(0)
   const [pendingKey, setPendingKey] = useState<string | null>(null)
   const hunkIndexRef = useRef(-1)
   const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const files = diffContent && diffContent !== '(no changes)' ? parseDiff(diffContent) : []
-  const sidebarItems = getDiffSidebarItems(files, openFiles)
+  const sidebarRows = getVisibleDiffSidebarRows(files, openFiles, openDirectories)
+  const visibleFileRows = sidebarRows.filter((row) => row.type === 'file')
 
   useEffect(() => {
     return () => {
@@ -62,6 +65,12 @@ function DiffOverlayContent({
     setOpenFiles((prev) => ({ ...prev, [i]: !isFileOpen(i) }))
   }
 
+  const isDirectoryOpen = (path: string): boolean => openDirectories[path] ?? true
+
+  const toggleDirectory = (path: string): void => {
+    setOpenDirectories((prev) => ({ ...prev, [path]: !isDirectoryOpen(path) }))
+  }
+
   const scrollToFile = (index: number): void => {
     const el = contentRef.current?.querySelector(`[data-file-index="${index}"]`)
     el?.scrollIntoView({ block: 'start', behavior: 'smooth' })
@@ -69,7 +78,33 @@ function DiffOverlayContent({
 
   const focusFile = (index: number): void => {
     setFocusedFile(index)
+    const sidebarRowIndex = sidebarRows.findIndex(
+      (row) => row.type === 'file' && row.index === index
+    )
+    if (sidebarRowIndex >= 0) setFocusedSidebarRow(sidebarRowIndex)
     scrollToFile(index)
+  }
+
+  const activateSidebarRow = (index: number): void => {
+    const row = sidebarRows[index]
+    if (!row) return
+    if (row.type === 'directory') {
+      toggleDirectory(row.path)
+    } else {
+      toggleFile(row.index)
+    }
+  }
+
+  const focusRelativeFile = (direction: 1 | -1): void => {
+    if (visibleFileRows.length === 0) return
+    const currentIndex = visibleFileRows.findIndex((row) => row.index === focusedFile)
+    const nextIndex =
+      currentIndex === -1
+        ? direction === 1
+          ? 0
+          : visibleFileRows.length - 1
+        : Math.max(0, Math.min(currentIndex + direction, visibleFileRows.length - 1))
+    focusFile(visibleFileRows[nextIndex].index)
   }
 
   const jumpToHunk = (direction: 'next' | 'prev'): void => {
@@ -164,22 +199,14 @@ function DiffOverlayContent({
             el.scrollTo(0, el.scrollHeight)
             break
           case 'n':
-            if (files.length > 0) {
-              const next = Math.min(focusedFile + 1, files.length - 1)
-              focusFile(next)
-            }
+            focusRelativeFile(1)
             break
           case 'N':
-            if (files.length > 0) {
-              const prev = Math.max(focusedFile - 1, 0)
-              focusFile(prev)
-            }
+            focusRelativeFile(-1)
             break
           case 'Enter':
           case 'o':
-            if (focusedFile >= 0 && focusedFile < files.length) {
-              toggleFile(focusedFile)
-            }
+            activateSidebarRow(focusedSidebarRow)
             break
           case 's':
             e.preventDefault()
@@ -201,31 +228,43 @@ function DiffOverlayContent({
             Diff {diffStaged ? '(staged)' : '(unstaged)'}
             <span className="diff-file-count">{files.length} files</span>
           </span>
-          <span className="pane-popup-hint">n/N file j/k d/u g/G ]c [c o s q</span>
+          <span className="pane-popup-hint">j/k d/u scroll n/N file g/G ]c [c o s q</span>
           <button className="pane-popup-close" onClick={closeDiff}>
             Esc
           </button>
         </div>
         <div className="diff-layout">
           <aside className="diff-sidebar" aria-label="Changed files">
-            {sidebarItems.length === 0 ? (
+            {sidebarRows.length === 0 ? (
               <div className="diff-sidebar-empty">No files</div>
             ) : (
-              sidebarItems.map((item) => (
+              sidebarRows.map((row, i) => (
                 <button
-                  key={item.index}
-                  className={`diff-sidebar-row${item.index === focusedFile ? ' diff-sidebar-row-active' : ''}`}
+                  key={row.id}
+                  className={`diff-sidebar-row diff-sidebar-row-${row.type}${i === focusedSidebarRow ? ' diff-sidebar-row-active' : ''}`}
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => focusFile(item.index)}
+                  onClick={() => {
+                    if (row.type === 'directory') {
+                      setFocusedSidebarRow(i)
+                      toggleDirectory(row.path)
+                    } else {
+                      focusFile(row.index)
+                    }
+                  }}
+                  style={{ paddingLeft: `${8 + row.depth * 14}px` }}
                 >
-                  <span className="diff-sidebar-status">{item.open ? '▾' : '▸'}</span>
-                  <span className="diff-sidebar-path" title={item.path}>
-                    {item.path}
+                  <span className="diff-sidebar-status">
+                    {row.type === 'directory' ? (row.open ? '▾' : '▸') : row.open ? '•' : '◦'}
                   </span>
-                  <span className="diff-sidebar-stats">
-                    {item.additions > 0 && <span className="diff-stat-add">+{item.additions}</span>}
-                    {item.deletions > 0 && <span className="diff-stat-del">-{item.deletions}</span>}
+                  <span className="diff-sidebar-path" title={row.path}>
+                    {row.name}
                   </span>
+                  {row.type === 'file' && (
+                    <span className="diff-sidebar-stats">
+                      {row.additions > 0 && <span className="diff-stat-add">+{row.additions}</span>}
+                      {row.deletions > 0 && <span className="diff-stat-del">-{row.deletions}</span>}
+                    </span>
+                  )}
                 </button>
               ))
             )}
