@@ -52,7 +52,7 @@ validation result.
 
 ## Verified
 
-Last rechecked in this workspace on 2026-06-14.
+Last rechecked in this workspace on 2026-06-01.
 
 The current workspace passes:
 
@@ -68,7 +68,6 @@ The current workspace passes:
 - `npm ls --depth=0`
 - `cargo tree -p unitmux --depth 1`
 - `npm run verify:migration`
-- `npm run smoke:mac-gui`
 - legacy-runtime residual scans
 - bundle validation for `Info.plist`, `.icns`, and `codesign`
 
@@ -91,12 +90,28 @@ That package is browserslist data for the frontend toolchain, not Electron runti
 
 ## Remaining
 
-- Manual visual confirmation that the packaged app behaves the same during normal user workflows.
-- Release-platform checks on Linux and Windows artifacts.
+- Real macOS GUI smoke verification of the packaged app
+- Visual confirmation that the packaged app behaves the same under LaunchServices on a desktop session
+- DMG creation on a machine with working `hdiutil`, if DMG output is required for release
 
-On 2026-06-14, `npm run build:mac` produced both the signed `.app` bundle and `unitmux.dmg` in this workspace.
-`npm run smoke:mac-gui` then launched the packaged app, targeted the newly launched process by PID, and verified a
-frontmost `700x400` window through System Events.
+`REQUIRE_DMG=1 npm run bundle:mac` was re-run on 2026-06-01 and correctly failed with `DMG creation failed` after
+`hdiutil` reported that no disk image device is available in this runner. This confirms the release-only DMG gate
+still fails closed here instead of uploading a missing macOS artifact.
 
-See [rmux and Rust Notes](./rmux-rust-notes.md) for the related rmux discussion, the smoke script fix, and the
-proposed backend plan.
+Run `npm run smoke:mac-gui` on a real macOS desktop session for the packaged-app GUI smoke check.
+
+In this runner, `open target/release/bundle/macos/unitmux.app` currently returns `kLSNoExecutableErr` even though
+the bundle contains `Contents/MacOS/unitmux` and the binary is present and executable. Treat that as a
+LaunchServices/sandbox limitation in this environment.
+
+`npm run smoke:mac-gui` was re-run on 2026-06-01 after changing the control check to use a compiled AppKit app. It
+still detects that even the minimal signed AppKit control app cannot be opened in this runner, then reports the same
+`kLSNoExecutableErr` before the unitmux launch step.
+
+Direct execution of `Contents/MacOS/unitmux` in this runner also aborts during AppKit / LaunchServices
+initialization (`SIGABRT` in `NSApplication sharedApplication`), so GUI smoke verification still needs a real
+desktop-session launch path outside this environment.
+
+## Details
+
+The repository root also contains the same migration notes in `RUST_MIGRATION_STATUS.md`.
