@@ -174,11 +174,16 @@ describe('Electron removal', () => {
     expect(smokeScript).toContain('LaunchServices cannot open a minimal signed app')
     expect(smokeScript).toContain("spawnSync('open'")
     expect(smokeScript).toContain('System Events')
-    expect(smokeScript).toContain('process "unitmux"')
+    expect(smokeScript).toContain('const existingAppPids = findAppPids()')
+    expect(smokeScript).toContain('waitForLaunchedAppPid(existingAppPids)')
+    expect(smokeScript).toContain('first process whose unix id is ${appPid}')
     expect(smokeScript).toContain('expectedWindowWidth = 700')
     expect(smokeScript).toContain('expectedWindowHeight = 400')
     expect(smokeScript).toContain('size of window 1')
-    expect(smokeScript).toContain('frontmost of process "unitmux"')
+    expect(smokeScript).toContain('frontmost as text')
+    expect(smokeScript).not.toMatch(
+      /tell process "unitmux"[\s\S]*frontmost of process "unitmux" as text/
+    )
     expect(smokeScript).toContain('frontmost:true')
     expect(smokeScript).toContain('Accessibility permission')
     expect(smokeScript).toContain('System Settings > Privacy & Security > Accessibility')

@@ -51,6 +51,7 @@ runPreflight('code signature verification', 'codesign', [
 ])
 runLaunchServicesControlCheck()
 
+const existingAppPids = findAppPids()
 const openResult = spawnSync('open', ['-n', appPath], { encoding: 'utf8' })
 if (openResult.status !== 0) {
   const output = `${openResult.stdout}${openResult.stderr}`.trim()
@@ -61,19 +62,24 @@ if (openResult.status !== 0) {
   process.exit(openResult.status ?? 1)
 }
 
+const appPid = waitForLaunchedAppPid(existingAppPids)
 const deadline = Date.now() + maxWaitMs
 let lastError = ''
 while (Date.now() < deadline) {
+  if (!appPid) {
+    lastError = `launched app process was not found for ${executablePath}`
+    break
+  }
   const probe = spawnSync(
     'osascript',
     [
       '-e',
       `tell application "System Events"
-  if exists process "unitmux" then
-    tell process "unitmux"
+  if exists (first process whose unix id is ${appPid}) then
+    tell (first process whose unix id is ${appPid})
       if (count windows) > 0 then
         set windowSize to size of window 1
-        return "frontmost:" & (frontmost of process "unitmux" as text) & "," & (item 1 of windowSize as text) & "," & (item 2 of windowSize as text)
+        return "frontmost:" & (frontmost as text) & "," & (item 1 of windowSize as text) & "," & (item 2 of windowSize as text)
       else
         return "0"
       end if
@@ -92,7 +98,7 @@ end tell`
       'Accessibility permission is required for the GUI smoke check: enable your terminal in System Settings > Privacy & Security > Accessibility'
     )
     console.error(probeError)
-    quitApp()
+    quitApp(appPid)
     process.exit(probe.status ?? 1)
   }
   const windowState = parseWindowState(output)
@@ -106,7 +112,7 @@ end tell`
     console.log(
       `unitmux GUI smoke check passed; visible frontmost window size: ${windowState.width}x${windowState.height}`
     )
-    quitApp()
+    quitApp(appPid)
     process.exit(0)
   }
 
@@ -117,11 +123,32 @@ end tell`
 }
 
 console.error(lastError || 'unitmux did not expose a visible GUI window before timeout')
-quitApp()
+if (appPid) quitApp(appPid)
 process.exit(1)
 
-function quitApp() {
-  spawnSync('osascript', ['-e', 'tell application "unitmux" to quit'], { stdio: 'ignore' })
+function findAppPids() {
+  const result = spawnSync('pgrep', ['-nf', executablePath], { encoding: 'utf8' })
+  return result.status === 0
+    ? result.stdout
+        .trim()
+        .split('\n')
+        .filter((pid) => pid.length > 0)
+    : []
+}
+
+function waitForLaunchedAppPid(existingPids) {
+  const existing = new Set(existingPids)
+  const deadline = Date.now() + maxWaitMs
+  while (Date.now() < deadline) {
+    const pid = findAppPids().find((candidate) => !existing.has(candidate))
+    if (pid) return pid
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, pollMs)
+  }
+  return ''
+}
+
+function quitApp(pid) {
+  spawnSync('kill', [pid], { stdio: 'ignore' })
 }
 
 function runPreflight(label, command, args) {
