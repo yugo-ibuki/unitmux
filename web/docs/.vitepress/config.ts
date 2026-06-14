@@ -25,6 +25,7 @@ export default defineConfig({
         items: [
           { text: 'Getting Started', link: '/guide/getting-started' },
           { text: 'Migration Status', link: '/guide/migration-status' },
+          { text: 'rmux and Rust Notes', link: '/guide/rmux-rust-notes' },
           { text: 'Usage', link: '/guide/usage' },
           { text: 'Image Attachment', link: '/guide/images' },
           { text: 'Shell Mode', link: '/guide/shell' },
